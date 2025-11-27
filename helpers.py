@@ -11,6 +11,8 @@ client = MongoClient(MONGO_URI)
 db = client["economy_bot"]
 users = db["users"]
 groups = db["groups"]
+couples = db["couples"]
+
 
 # ----------------- DB Helper Functions -----------------
 def get_user(user_id):
