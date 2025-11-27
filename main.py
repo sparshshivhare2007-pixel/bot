@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 from helpers import get_user, users
 
 # Load ENV
@@ -11,7 +11,6 @@ TOKEN = os.getenv("BOT_TOKEN")
 from commands.start_command import start_command
 
 # -------------------- BASIC COMMANDS --------------------
-
 async def balance(update, context):
     user = get_user(update.effective_user.id)
 
@@ -23,16 +22,15 @@ async def balance(update, context):
 
     rank_data = list(users.aggregate(rank_pipeline))
     rank = rank_data[0]["users"].index(update.effective_user.id) + 1 if rank_data else 1
-
     status = "☠️ Dead" if user.get("killed") else "Alive"
     name = update.effective_user.first_name
 
     await update.message.reply_text(
-        f"👤 Name: {name}\n"
-        f"💰 Total Balance: ${user['balance']}\n"
-        f"🏆 Global Rank: #{rank}\n"
-        f"❤️ Status: {status}\n"
-        f"⚔️ Kills: {user['kills']}"
+        f"👤 𝐍𝐚𝐦𝐞: {name}\n"
+        f"💰 𝐓𝐨𝐭𝐚𝐥 𝐁𝐚𝐥𝐚𝐧𝐜𝐞: ${user['balance']}\n"
+        f"🏆 𝐆𝐥𝐨𝐛𝐚𝐥 𝐑𝐚𝐧𝐤: #{rank}\n"
+        f"❤️ 𝐒𝐭𝐚𝐭𝐮𝐬: {status}\n"
+        f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
 
 
@@ -46,6 +44,22 @@ async def work(update, context):
     )
 
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
+
+
+# -------------------- CALLBACK QUERY HANDLER --------------------
+async def button_handler(update, context):
+    query = update.callback_query
+    await query.answer()  # Mandatory to notify Telegram
+
+    if query.data == "friends":
+        await query.message.reply_text(
+            "Join my awesome group! 👥\n👉 [Click Here](https://t.me/YourGroupLink)",
+            parse_mode="Markdown"
+        )
+    elif query.data == "talk":
+        await query.message.reply_text("Let's chat! 💬")
+    elif query.data == "games":
+        await query.message.reply_text("Check out the games! 🎮")
 
 
 # -------------------- IMPORT ALL OTHER COMMANDS --------------------
@@ -73,14 +87,17 @@ from commands.close_economy import close_economy
 def main():
     app = Application.builder().token(TOKEN).build()
 
-    # ---- CUSTOM START HANDLER FROM start.py ----
+    # ---- CUSTOM START HANDLER ----
     app.add_handler(CommandHandler("start", start_command))
 
-    # Basic
+    # ---- CALLBACK HANDLER FOR BUTTONS ----
+    app.add_handler(CallbackQueryHandler(button_handler))
+
+    # ---- BASIC COMMANDS ----
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("work", work))
 
-    # Imported commands
+    # ---- OTHER COMMANDS ----
     app.add_handler(CommandHandler("claim", claim))
     app.add_handler(CommandHandler("own", own))
     app.add_handler(CommandHandler("couple", couple))
