@@ -7,7 +7,7 @@ from telegram.ext import (
     MessageHandler,
     filters
 )
-from helpers import get_user, users
+from helpers import get_user, users, add_group_user
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
@@ -19,17 +19,20 @@ from commands.transfer_balance import transfer_balance
 
 # CHATBOT
 from chatbot.chatbot_handler import chatbot_handler
+
+# OTHER CUSTOM COMMANDS
 from commands.hug import hug
 from commands.couple import couple
 
-
-
-# -------------------- BASIC COMMANDS --------------------
+# -------------------- TRACK USERS --------------------
 async def track_users(update, context):
     if update.effective_chat.type in ["group", "supergroup"]:
         user = update.effective_user
         add_group_user(update.effective_chat.id, user.id, user.first_name)
 
+
+
+# -------------------- BASIC COMMANDS --------------------
 async def balance(update, context):
     user = get_user(update.effective_user.id)
 
@@ -71,7 +74,6 @@ async def work(update, context):
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
 
-
 # -------------------- OTHER COMMANDS --------------------
 from commands.claim import claim
 from commands.own import own
@@ -92,13 +94,11 @@ from commands.open_economy import open_economy
 from commands.close_economy import close_economy
 
 
-
-
-
 # -------------------- RUN BOT --------------------
 def main():
     app = Application.builder().token(TOKEN).build()
 
+    # MAIN COMMANDS
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
 
@@ -107,8 +107,11 @@ def main():
 
     app.add_handler(CommandHandler("economy", economy_guide))
     app.add_handler(CommandHandler("transfer", transfer_balance))
-    app.add_handler(MessageHandler(filters.TEXT, chatbot_handler))
 
+    # TRACK USERS (important)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
+
+    # FUN COMMANDS
     app.add_handler(CommandHandler("claim", claim))
     app.add_handler(CommandHandler("own", own))
     app.add_handler(CommandHandler("crush", crush))
@@ -128,14 +131,12 @@ def main():
     app.add_handler(CommandHandler("close", close_economy))
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
-    
 
-    # ---------------- CHATBOT HANDLER ----------------
-    
+    # ---------------- CHATBOT HANDLER (LAST ME) ----------------
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot_handler))
 
     print("Bot started...")
     app.run_polling()
-
 
 
 if __name__ == "__main__":
