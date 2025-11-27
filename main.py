@@ -166,6 +166,44 @@ async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(msg)
 
+# ----------------- /kill -----------------
+
+async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("⚠️ Kisi ko reply karke /kill likho!")
+
+    killer_id = update.message.from_user.id
+    target = update.message.reply_to_message.from_user
+    target_id = target.id
+
+    if killer_id == target_id:
+        return await update.message.reply_text("😂 Apne aap ko kill nahi kar sakte!")
+
+    # Fetch target user
+    target_user = users.find_one({"user_id": target_id})
+
+    if target_user and target_user.get("dead", False):
+        return await update.message.reply_text("💀 Ye banda already dead hai!")
+
+    # Mark as dead
+    users.update_one(
+        {"user_id": target_id},
+        {"$set": {"dead": True}},
+        upsert=True
+    )
+
+    # Increase killer score
+    users.update_one(
+        {"user_id": killer_id},
+        {"$inc": {"kills": 1}},
+        upsert=True
+    )
+
+    await update.message.reply_text(
+        f"☠️ **{update.message.from_user.first_name}** ne **{target.first_name}** ko kill kar diya!"
+    )
+
+
 
 
 # ----------------- /close -----------------
