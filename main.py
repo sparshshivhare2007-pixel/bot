@@ -14,6 +14,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["economy_bot"]
 users = db["users"]
+groups = db["groups"]  # For group economy status
 
 # ----------------------
 # Helper Functions
@@ -27,6 +28,16 @@ def get_user(user_id):
 
 def update_user(user_id, data):
     users.update_one({"user_id": user_id}, {"$set": data})
+
+def get_group_status(chat_id):
+    group = groups.find_one({"group_id": chat_id})
+    if not group:
+        groups.insert_one({"group_id": chat_id, "economy_status": True})
+        return True
+    return group.get("economy_status", True)
+
+def set_group_status(chat_id, status: bool):
+    groups.update_one({"group_id": chat_id}, {"$set": {"economy_status": status}}, upsert=True)
 
 # ---------------- /start ----------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -60,6 +71,10 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ---------------- /work ----------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    if not get_group_status(chat_id):
+        return await update.message.reply_text("❌ Economy commands are disabled in this group!")
+
     user_id = update.effective_user.id
     user = get_user(user_id)
 
@@ -73,89 +88,14 @@ async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ---------------- /daily ----------------
 async def daily(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    if not get_group_status(chat_id):
+        return await update.message.reply_text("❌ Economy commands are disabled in this group!")
+
     user_id = update.effective_user.id
     user = get_user(user_id)
     now = datetime.utcnow()
 
     if "last_daily" in user:
         last = user["last_daily"]
-        if now - last < timedelta(hours=24):
-            remaining = timedelta(hours=24) - (now - last)
-            hours = remaining.seconds // 3600
-            mins = (remaining.seconds % 3600) // 60
-            return await update.message.reply_text(
-                f"⏳ Already claimed!\nNext claim: **{hours}h {mins}m**"
-            )
-
-    reward = 500
-    new_balance = user["balance"] + reward
-    update_user(user_id, {"balance": new_balance, "last_daily": now})
-
-    await update.message.reply_text(
-        f"🎁 Daily Reward Claimed!\nEarned: {reward} coins\n💰 New Balance: {new_balance}"
-    )
-
-# ---------------- /rob ----------------
-async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("❌ Reply to someone to rob them!")
-
-    robber_id = update.effective_user.id
-    target_id = update.message.reply_to_message.from_user.id
-
-    if robber_id == target_id:
-        return await update.message.reply_text("❌ You cannot rob yourself!")
-
-    robber = get_user(robber_id)
-    target = get_user(target_id)
-
-    if target.get("protection") and target["protection"] > datetime.utcnow():
-        return await update.message.reply_text("🛡 Target is protected!")
-
-    if target["balance"] <= 0:
-        return await update.message.reply_text("❌ Target has no coins!")
-
-    amount = randint(1, min(1000, target["balance"]))
-    update_user(robber_id, {"balance": robber["balance"] + amount})
-    update_user(target_id, {"balance": target["balance"] - amount})
-
-    await update.message.reply_text(
-        f"💰 You robbed {amount} coins from {update.message.reply_to_message.from_user.first_name}!"
-    )
-
-# ---------------- /protect ----------------
-async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    user = get_user(user_id)
-    args = context.args
-
-    if not args or args[0] not in ["1d", "2d"]:
-        return await update.message.reply_text("Usage: /protect 1d or /protect 2d")
-
-    days = int(args[0][0])
-    cost = 500 * days
-    if user["balance"] < cost:
-        return await update.message.reply_text(f"❌ You need {cost} coins!")
-
-    new_protection = datetime.utcnow() + timedelta(days=days)
-    update_user(user_id, {"balance": user["balance"] - cost, "protection": new_protection})
-
-    await update.message.reply_text(
-        f"🛡 Protection active for {days} day(s)!\n💰 Remaining Balance: {user['balance'] - cost}"
-    )
-
-# ---------------- Polling Setup ----------------
-app = ApplicationBuilder().token(TOKEN).build()
-
-# Add handlers
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("balance", balance))
-app.add_handler(CommandHandler("work", work))
-app.add_handler(CommandHandler("daily", daily))
-app.add_handler(CommandHandler("rob", rob))
-app.add_handler(CommandHandler("protect", protect))
-
-# Run bot
-if __name__ == "__main__":
-    print("Bot is running...")
-    app.run_polling()
+        if now - last
