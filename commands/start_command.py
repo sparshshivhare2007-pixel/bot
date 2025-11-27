@@ -1,13 +1,18 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ApplicationBuilder
 
+# 🚨 IMPORTANT: Replace this URL with the direct link to your bot's welcome image.
+# यहाँ आपकी वास्तविक इमेज लिंक लगा दी गई है।
+BOT_IMAGE_URL = "https://files.catbox.moe/z1skp4.jpg" 
+
 # /start command
 async def start_command(update: Update, context: CallbackContext):
     user = update.effective_user
 
+    # The text remains the same, but will now be used as the photo's caption.
     text = (
         f"✨ Hey {user.first_name} ~\n"
-        "💞 You're talking to *𝐀𝐤𝐞𝐧𝐨*, a sassy cutie bot 💕\n\n"
+        "💞 You're talking to *𝐀𝐤e𝐧o*, a sassy cutie bot 💕\n\n"
         "☑ Choose an option below:"
     )
 
@@ -20,8 +25,10 @@ async def start_command(update: Update, context: CallbackContext):
         [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/YourBot?startgroup=true")]
     ]
 
-    await update.message.reply_text(
-        text,
+    # Use reply_photo to send the image.
+    await update.message.reply_photo(
+        photo=BOT_IMAGE_URL,
+        caption=text,
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="Markdown"
     )
