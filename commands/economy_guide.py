@@ -5,7 +5,7 @@ async def economy_guide(update: Update, context: CallbackContext):
     """Sends the Baka Economy System Guide to the user."""
     
     guide_text = (
-        "💰 *Baka Economy System Guide*\n\n"
+        "💰 *Akeno Economy System Guide*\n\n"
         
         "💬 *How it works:*\n"
         "Manage your virtual money and items in the group! Use commands below to earn, gift, buy, or interact with others.\n\n"
