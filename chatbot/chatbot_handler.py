@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ChatAction
 from chatbot.gemini_client import ask_gemini  # Gemini API call
 
+
 # Personality wrapper
 def personality_wrap(text: str) -> str:
     """Adds Shizuka style prefix/suffix + emojis to AI reply."""
@@ -14,7 +15,10 @@ async def chatbot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot_username = context.bot.username
     prompt = ""
 
-    # Group Chat Logic
+   if update.message.text.startswith("/"):
+    return  # DO NOT block commands
+
+       # Group Chat Logic
     if update.effective_chat.type in ["group", "supergroup"]:
         mention_tag = f"@{bot_username}"
         if full_text.startswith(mention_tag):
