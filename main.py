@@ -19,6 +19,7 @@ from commands.transfer_balance import transfer_balance
 
 # CHATBOT
 from chatbot.chatbot_handler import chatbot_handler
+from commands.hug import hug
 
 
 
@@ -120,6 +121,8 @@ def main():
     app.add_handler(CommandHandler("revive", revive))
     app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_economy))
+    app.add_handler(CommandHandler("hug", hug))
+    
 
     # ---------------- CHATBOT HANDLER ----------------
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot_handler))
