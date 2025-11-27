@@ -66,7 +66,7 @@ from commands.toprich import toprich
 from commands.topkill import topkill
 from commands.kill import kill
 from commands.revive import revive
-from commands.open import open_cmd
+from commands.open_economy import open_economy
 from commands.close import close_cmd
 
 
@@ -96,7 +96,7 @@ def main():
     app.add_handler(CommandHandler("topkill", topkill))
     app.add_handler(CommandHandler("kill", kill))
     app.add_handler(CommandHandler("revive", revive))
-    app.add_handler(CommandHandler("open", open_cmd))
+    app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_cmd))
 
     app.run_polling()
