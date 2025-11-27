@@ -1,3 +1,4 @@
+
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ChatAction
@@ -16,7 +17,8 @@ async def chatbot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     prompt = ""
 
    if update.message.text.startswith("/"):
-    return  # DO NOT block commands
+    return
+
 
        # Group Chat Logic
     if update.effective_chat.type in ["group", "supergroup"]:
