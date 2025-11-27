@@ -179,5 +179,3 @@ async def main():
     print("BOT STARTED WITH POLLING...")
     await app.run_polling()
 
-import asyncio
-asyncio.run(main())
