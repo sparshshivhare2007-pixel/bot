@@ -20,6 +20,7 @@ from commands.transfer_balance import transfer_balance
 # CHATBOT
 from chatbot.chatbot_handler import chatbot_handler
 from commands.hug import hug
+from commands.couple import couple
 
 
 
@@ -105,7 +106,6 @@ def main():
 
     app.add_handler(CommandHandler("claim", claim))
     app.add_handler(CommandHandler("own", own))
-    app.add_handler(CommandHandler("couple", couple))
     app.add_handler(CommandHandler("crush", crush))
     app.add_handler(CommandHandler("love", love))
     app.add_handler(CommandHandler("slap", slap))
@@ -122,6 +122,7 @@ def main():
     app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_economy))
     app.add_handler(CommandHandler("hug", hug))
+    app.add_handler(CommandHandler("couple", couple))
     
 
     # ---------------- CHATBOT HANDLER ----------------
