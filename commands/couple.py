@@ -2,13 +2,14 @@ import random
 import os
 from datetime import datetime
 from helpers import couples
+from telegram import ChatMemberStatus
 
 
 async def couple(update, context):
     chat_id = update.effective_chat.id
     date = datetime.now().strftime("%Y-%m-%d")
 
-    # 1. Check today's saved couple
+    # ---- Step 1: Check if saved result exists ----
     today = couples.find_one({"chat_id": chat_id, "date": date})
     if today:
         img = today["img"]
@@ -28,23 +29,35 @@ async def couple(update, context):
             parse_mode="Markdown"
         )
 
-    # 2. Get all chat members (admins only works in PTB 20+)
-    members = await context.bot.get_chat_administrators(chat_id)
-    users = [m.user for m in members if not m.user.is_bot]
+    # ---- Step 2: Get group members safely ----
+    members = []
+    try:
+        member_list = await context.bot.get_chat_administrators(chat_id)
+        # Add admins
+        for m in member_list:
+            members.append(m.user)
+    except:
+        pass
 
-    if len(users) < 2:
-        return await update.message.reply_text("❌ Not enough users to create a couple.")
+    # Add sender at least
+    if update.effective_user not in members:
+        members.append(update.effective_user)
 
-    # 3. Pick randomly
-    p1, p2 = random.sample(users, 2)
-    name1, name2 = p1.first_name, p2.first_name
+    # If still too few
+    if len(members) < 2:
+        return await update.message.reply_text("❌ Not enough users to select a couple!")
 
-    # 4. Random image
+    # ---- Step 3: Pick random couple ----
+    p1, p2 = random.sample(members, 2)
+    name1 = p1.first_name
+    name2 = p2.first_name
+
+    # ---- Step 4: Choose random image ----
     folder = "assets/couple"
     imgs = os.listdir(folder)
     img = os.path.join(folder, random.choice(imgs))
 
-    # 5. Save the couple to DB
+    # ---- Step 5: Save to DB ----
     couples.insert_one({
         "chat_id": chat_id,
         "date": date,
@@ -53,7 +66,7 @@ async def couple(update, context):
         "img": img
     })
 
-    # 6. Send result
+    # ---- Step 6: Send result ----
     caption = (
         "💖 *Today's Cute Couple* 💖\n\n"
         f"{name1} ❤️ {name2}\n\n"
