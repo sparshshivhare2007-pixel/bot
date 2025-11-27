@@ -131,18 +131,31 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ----------------- /toprich -----------------
 async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_users = users.find().sort("balance", -1).limit(10)
-    msg = "💰 Top 10 Richest Users:\n"
-    for u in top_users:
-        msg += f"{u.get('user_id')} - {u.get('balance')} coins\n"
-    await update.message.reply_text(msg)
+    msg = "🏆 Top 10 Richest Users:\n\n"
+    for i, user in enumerate(top_users, 1):
+        name = user.get("first_name") or "Unknown"
+        username = user.get("username")
+        if username:
+            display = f"[{name}](https://t.me/{username})"
+        else:
+            display = name
+        msg += f"{i}. {display}: ${user['balance']}\n"
+    await update.message.reply_text(msg, parse_mode="Markdown")
 
 # ----------------- /topkill -----------------
 async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_users = users.find().sort("kills", -1).limit(10)
-    msg = "🔪 Top 10 Killers:\n"
-    for u in top_users:
-        msg += f"{u.get('user_id')} - {u.get('kills')} kills\n"
-    await update.message.reply_text(msg)
+    msg = "🔪 Top 10 Killers:\n\n"
+    for i, user in enumerate(top_users, 1):
+        name = user.get("first_name") or "Unknown"
+        username = user.get("username")
+        if username:
+            display = f"[{name}](https://t.me/{username})"
+        else:
+            display = name
+        msg += f"{i}. {display}: {user['kills']} kills\n"
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
 
 # ----------------- /close -----------------
 async def close(update: Update, context: ContextTypes.DEFAULT_TYPE):
