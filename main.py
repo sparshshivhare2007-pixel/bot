@@ -14,7 +14,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["economy_bot"]
 users = db["users"]
-groups = db["groups"]  # to store group economy status
+groups = db["groups"]
 
 # ----------------- Helper Functions -----------------
 def is_killed(user_id):
@@ -73,7 +73,6 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_obj = update.effective_user
 
     user_id = user_obj.id
-
     db_user = users.find_one({"user_id": user_id})
     if not db_user:
         users.insert_one({
@@ -135,8 +134,7 @@ async def daily(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     reward = 500
     new_balance = user["balance"] + reward
-    users.update_one({"user_id": user["user_id"]},
-                     {"$set": {"balance": new_balance, "last_daily": now}})
+    users.update_one({"user_id": user["user_id"]}, {"$set": {"balance": new_balance, "last_daily": now}})
     await update.message.reply_text(f"🎁 Daily Reward Claimed!\nEarned: {reward} coins\n💰 New Balance: {new_balance}")
 
 # ----------------- /rob -----------------
@@ -178,7 +176,6 @@ async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
             username = f"@{chat.username}" if chat.username else chat.first_name
         except:
             username = "Unknown"
-
         msg += f"{idx}. {username}: ${user['balance']}\n"
 
     msg += "\nNote: Use username for clickable profile."
@@ -195,7 +192,6 @@ async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
             username = f"@{chat.username}" if chat.username else chat.first_name
         except:
             username = "Unknown"
-
         msg += f"{idx}. {username}: {user.get('kills', 0)} kills\n"
 
     await update.message.reply_text(msg)
@@ -204,7 +200,6 @@ async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_group_open(update.effective_chat.id):
         return await update.message.reply_text("❌ Economy commands are closed in this group!")
-
     if not update.message.reply_to_message:
         return await update.message.reply_text("⚠️ Reply to the user you want to kill.")
 
@@ -222,10 +217,7 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users.update_one({"user_id": killer_id}, {"$inc": {"kills": 1}})
     users.update_one({"user_id": target_id}, {"$set": {"balance": 0, "killed": True}})
 
-    await update.message.reply_text(
-        f"⚔️ {update.effective_user.first_name} killed {update.message.reply_to_message.from_user.first_name}!\n"
-        f"💀 Balance is now 0 and status set to killed."
-    )
+    await update.message.reply_text(f"⚔️ {update.effective_user.first_name} killed {update.message.reply_to_message.from_user.first_name}!\n💀 Balance is now 0 and status set to killed.")
 
 # ----------------- /revive -----------------
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -244,10 +236,7 @@ async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_balance = target["balance"] - 200
     users.update_one({"user_id": target_id}, {"$set": {"balance": new_balance, "killed": False}})
 
-    await update.message.reply_text(
-        f"❤️ {update.message.reply_to_message.from_user.first_name} has been revived!\n"
-        f"💰 200 coins deducted\n📌 New Balance: {new_balance}"
-    )
+    await update.message.reply_text(f"❤️ {update.message.reply_to_message.from_user.first_name} has been revived!\n💰 200 coins deducted\n📌 New Balance: {new_balance}")
 
 # ----------------- /close -----------------
 async def close(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -261,9 +250,98 @@ async def open_economy(update: Update, context: ContextTypes.DEFAULT_TYPE):
         set_group_status(update.effective_chat.id, True)
         await update.message.reply_text("✅ Economy commands are now OPEN in this group!")
 
+# ----------------- /claim -----------------
+async def claim(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = get_user(update.effective_user.id)
+    if "claimed" in user and user["claimed"]:
+        return await update.message.reply_text("❌ You have already claimed your first coins!")
+    reward = 3000
+    new_balance = user["balance"] + reward
+    users.update_one({"user_id": user["user_id"]}, {"$set": {"balance": new_balance, "claimed": True}})
+    await update.message.reply_text(f"🎉 Congrats! You received {reward} coins as your first claim!\n💰 New Balance: {new_balance}")
+
+# ----------------- /own -----------------
+async def own(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📌 To create your own sticker pack, open Telegram and search for 'Stickers' → 'Create new pack'. Then follow Telegram's instructions.")
+
+# ----------------- /couple -----------------
+async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        return await update.message.reply_text("❌ This command only works in groups!")
+    members = [m.user for m in await context.bot.get_chat_administrators(update.effective_chat.id)]
+    if len(members) < 2:
+        return await update.message.reply_text("❌ Not enough members to form couples!")
+    pair1, pair2 = random.sample(members, 2)
+    await update.message.reply_text(f"💞 Couple 1: {pair1.first_name} ❤️ {pair2.first_name}")
+
+# ----------------- /crush -----------------
+async def crush(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("⚠️ Reply to the user to calculate crush percentage!")
+    crush_percentage = random.randint(0, 100)
+    target_name = update.message.reply_to_message.from_user.first_name
+    await update.message.reply_text(f"💘 Your crush compatibility with {target_name} is {crush_percentage}%")
+
+# ----------------- /love -----------------
+async def love(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("⚠️ Reply to the user to calculate love percentage!")
+    love_percentage = random.randint(0, 100)
+    target_name = update.message.reply_to_message.from_user.first_name
+    await update.message.reply_text(f"❤️ Love compatibility with {target_name} is {love_percentage}%")
+
+# ----------------- /slap -----------------
+async def slap(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("⚠️ Reply to the user you want to slap!")
+    target_name = update.message.reply_to_message.from_user.first_name
+    await update.message.reply_text(f"🤚 {update.effective_user.first_name} slaps {target_name}!")
+
+# ----------------- /items -----------------
+async def items(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = ("📦 Available Gift Items:\n\n"
+           "🌹 Rose — $500\n🍫 Chocolate — $800\n💍 Ring — $2000\n🧸 Teddy Bear — $1500\n🍕 Pizza — $600\n"
+           "🎁 Surprise Box — $2500\n🐶 Puppy — $3000\n🎂 Cake — $1000\n💌 Love Letter — $400\n🐱 Cat — $2500")
+    await update.message.reply_text(msg)
+
+# ----------------- /item -----------------
+async def item(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.reply_to_message:
+        user_id = update.message.reply_to_message.from_user.id
+    else:
+        user_id = update.effective_user.id
+
+    user = get_user(user_id)
+    user_items = user.get("items", [])
+    if not user_items:
+        return await update.message.reply_text(f"ㅤㅤ❛ {update.message.reply_to_message.from_user.first_name if update.message.reply_to_message else 'You'} has no items yet 😢")
+    items_list = "\n".join([f"• {i}" for i in user_items])
+    await update.message.reply_text(f"📦 {user.get('name', 'User')}'s items:\n{items_list}")
+
+# ----------------- /give -----------------
+async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("⚠️ Reply to the user to give them coins!")
+    try:
+        amount = int(context.args[0])
+    except (IndexError, ValueError):
+        return await update.message.reply_text("❌ Usage: /give <amount> (reply to user)")
+
+    sender = get_user(update.effective_user.id)
+    receiver_id = update.message.reply_to_message.from_user.id
+    receiver = get_user(receiver_id)
+
+    if sender["balance"] < amount:
+        return await update.message.reply_text("❌ You do not have enough coins!")
+
+    users.update_one({"user_id": sender["user_id"]}, {"$inc": {"balance": -amount}})
+    users.update_one({"user_id": receiver_id}, {"$inc": {"balance": amount}})
+    await update.message.reply_text(f"💸 {update.effective_user.first_name} gave {amount} coins to {update.message.reply_to_message.from_user.first_name}!")
+
 # ----------------- App Setup -----------------
 app = ApplicationBuilder().token(TOKEN).build()
 
+# Existing economy handlers
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("balance", balance))
 app.add_handler(CommandHandler("bal", balance))
@@ -277,6 +355,15 @@ app.add_handler(CommandHandler("close", close))
 app.add_handler(CommandHandler("open", open_economy))
 app.add_handler(CommandHandler("kill", kill))
 app.add_handler(CommandHandler("revive", revive))
+app.add_handler(CommandHandler("claim", claim))
+app.add_handler(CommandHandler("own", own))
+app.add_handler(CommandHandler("couple", couple))
+app.add_handler(CommandHandler("crush", crush))
+app.add_handler(CommandHandler("love", love))
+app.add_handler(CommandHandler("slap", slap))
+app.add_handler(CommandHandler("items", items))
+app.add_handler(CommandHandler("item", item))
+app.add_handler(CommandHandler("give", give))
 
 if __name__ == "__main__":
     app.run_polling()
