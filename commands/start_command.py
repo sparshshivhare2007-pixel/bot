@@ -11,11 +11,12 @@ async def start_command(update: Update, context: CallbackContext):
         "☑ Choose an option below:"
     )
 
-   keyboard = [
-        [InlineKeyboardButton("💬 Talk to 𝐀𝐤𝐞𝐧𝐨", callback_data="talk")],  # <--- यह एक सब-लिस्ट है
-        [ # <--- दूसरी सब-लिस्ट यहाँ शुरू होती है
-            InlineKeyboardButton("🧸 Friends", url="https://t.me/mich_family_group")
-            InlineKeyboardButton("🎮 Games", callback_data="games")  # <--- यहाँ कॉमा मिसिंग है!
+    keyboard = [
+        [InlineKeyboardButton("💬 Talk to 𝐀𝐤𝐞𝐧𝐨", callback_data="talk")],
+        [
+            # Friends button opens URL directly
+            InlineKeyboardButton("🧸 Friends", url="https://t.me/mich_family_group"),
+            InlineKeyboardButton("🎮 Games", callback_data="games")
         ],
         [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/YourBot?startgroup=true")]
     ]
@@ -29,17 +30,24 @@ async def start_command(update: Update, context: CallbackContext):
 # Callback query handler
 async def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
-    await query.answer()  # Ye zaruri hai Telegram ko notify karne ke liye ki button press hua
+    
+    # Text for the Game Features pop-up alert
+    game_features_text = (
+        "🎮 Game Features\n\n"
+        "To know about the Lottery System, tap /game\n"
+        "To know about the Economy System, tap /economy\n\n"
+        "Have fun and be lucky 🍀"
+    )
 
-    if query.data == "friends":
-        # Yaha pe tumhara group ka link bhej rahe
-        await query.message.reply_text(
-            "Join my awesome group! 👥\n👉 [Click Here](https://t.me/mich_family_group)",
-            parse_mode="Markdown"
-        )
-    elif query.data == "talk":
+    if query.data == "talk":
+        await query.answer() # Acknowledge the press
         await query.message.reply_text("Let's chat! 💬")
+        
     elif query.data == "games":
-        await query.message.reply_text("Check out the games! 🎮")
-
-#
+        # Send a pop-up alert (modal) with game features
+        await query.answer(
+            text=game_features_text, 
+            show_alert=True 
+        )
+        
+    # 'friends' is handled by URL and does not need an 'elif' block here.
