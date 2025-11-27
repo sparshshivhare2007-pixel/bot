@@ -121,11 +121,4 @@ app.add_handler(CommandHandler("daily", daily))
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=port,
-        url_path=TOKEN,
-        webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{TOKEN}"
-    )
+    app.run_polling()
