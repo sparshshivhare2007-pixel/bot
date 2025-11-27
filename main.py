@@ -55,7 +55,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# ----------------- /balance or /bal -----------------
+# ----------------- /balance -----------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.reply_to_message:
         user_id = update.message.reply_to_message.from_user.id
@@ -93,7 +93,8 @@ async def daily(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     reward = 500
     new_balance = user["balance"] + reward
-    users.update_one({"user_id": user["user_id"]}, {"$set": {"balance": new_balance, "last_daily": now}})
+    users.update_one({"user_id": user["user_id"]},
+                     {"$set": {"balance": new_balance, "last_daily": now}})
     await update.message.reply_text(f"🎁 Daily Reward Claimed!\nEarned: {reward} coins\n💰 New Balance: {new_balance}")
 
 # ----------------- /rob -----------------
@@ -122,7 +123,6 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("❌ Economy commands are closed in this group!")
     import random
     success = random.choice([True, False])
-    user = get_user(update.effective_user.id)
     if success:
         await update.message.reply_text("🛡 You are protected from the next robbery!")
     else:
@@ -131,17 +131,34 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ----------------- /toprich -----------------
 async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_users = users.find().sort("balance", -1).limit(10)
-    msg = "💰 Top 10 Richest Users:\n"
-    for u in top_users:
-        msg += f"{u.get('user_id')} - {u.get('balance')} coins\n"
+    msg = "🏆 Top 10 Richest Users:\n"
+
+    for idx, user in enumerate(top_users, start=1):
+        try:
+            chat = await context.bot.get_chat(user["user_id"])
+            username = f"@{chat.username}" if chat.username else (chat.first_name or "Unknown")
+        except:
+            username = "Unknown"
+
+        msg += f"{idx}. {username}: ${user['balance']}\n"
+
+    msg += "\nNote: Use username for making your profile clickable"
     await update.message.reply_text(msg)
 
 # ----------------- /topkill -----------------
 async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_users = users.find().sort("kills", -1).limit(10)
-    msg = "🔪 Top 10 Killers:\n"
-    for u in top_users:
-        msg += f"{u.get('user_id')} - {u.get('kills')} kills\n"
+    msg = "⚔️ Top 10 Killers:\n"
+
+    for idx, user in enumerate(top_users, start=1):
+        try:
+            chat = await context.bot.get_chat(user["user_id"])
+            username = f"@{chat.username}" if chat.username else (chat.first_name or "Unknown")
+        except:
+            username = "Unknown"
+
+        msg += f"{idx}. {username}: {user.get('kills', 0)}\n"
+
     await update.message.reply_text(msg)
 
 # ----------------- /close -----------------
