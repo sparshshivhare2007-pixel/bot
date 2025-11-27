@@ -67,7 +67,7 @@ from commands.topkill import topkill
 from commands.kill import kill
 from commands.revive import revive
 from commands.open_economy import open_economy
-from commands.close import close_cmd
+from commands.close_economy import close_economy
 
 
 # -------------------- RUN BOT --------------------
@@ -97,7 +97,7 @@ def main():
     app.add_handler(CommandHandler("kill", kill))
     app.add_handler(CommandHandler("revive", revive))
     app.add_handler(CommandHandler("open", open_economy))
-    app.add_handler(CommandHandler("close", close_cmd))
+    app.add_handler(CommandHandler("close", close_economy))
 
     app.run_polling()
 
