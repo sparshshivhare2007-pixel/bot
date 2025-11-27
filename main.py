@@ -1,26 +1,55 @@
-# bot.py
 import os
-from telegram.ext import ApplicationBuilder, CommandHandler
 from dotenv import load_dotenv
+from telegram.ext import Application, CommandHandler
+from helpers import get_user, users
 
+# Load ENV
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
-app = ApplicationBuilder().token(TOKEN).build()
+# -------------------- BASIC COMMANDS --------------------
 
-# ----------------- Import commands -----------------
-from commands.start import start
-from commands.balance import balance
-from commands.work import work
-from commands.daily import daily
-from commands.rob import rob
-from commands.protect import protect
-from commands.toprich import toprich
-from commands.topkill import topkill
-from commands.kill import kill
-from commands.revive import revive
-from commands.close import close
-from commands.open import open_economy
+async def start(update, context):
+    await update.message.reply_text(
+        "👋 Welcome to the Economy Bot!\n"
+        "Use /claim to get your first 3000 coins!"
+    )
+
+async def balance(update, context):
+    user = get_user(update.effective_user.id)
+
+    # Global Rank Calculation
+    rank_pipeline = [
+        {"$sort": {"balance": -1}},
+        {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
+    ]
+
+    rank_data = list(users.aggregate(rank_pipeline))
+    rank = rank_data[0]["users"].index(update.effective_user.id) + 1 if rank_data else 1
+
+    status = "☠️ Dead" if user.get("killed") else "Alive"
+    name = update.effective_user.first_name
+
+    await update.message.reply_text(
+        f"👤 Name: {name}\n"
+        f"💰 Total Balance: ${user['balance']}\n"
+        f"🏆 Global Rank: #{rank}\n"
+        f"❤️ Status: {status}\n"
+        f"⚔️ Kills: {user['kills']}"
+    )
+
+async def work(update, context):
+    user = get_user(update.effective_user.id)
+    reward = 200
+
+    users.update_one(
+        {"user_id": user["user_id"]},
+        {"$inc": {"balance": reward}}
+    )
+
+    await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
+
+# -------------------- IMPORT ALL COMMANDS --------------------
 from commands.claim import claim
 from commands.own import own
 from commands.couple import couple
@@ -30,29 +59,47 @@ from commands.slap import slap
 from commands.items import items
 from commands.item import item
 from commands.give import give
+from commands.daily import daily
+from commands.rob import rob
+from commands.protect import protect
+from commands.toprich import toprich
+from commands.topkill import topkill
+from commands.kill import kill
+from commands.revive import revive
+from commands.open import open_cmd
+from commands.close import close_cmd
 
-# ----------------- Add handlers -----------------
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("balance", balance))
-app.add_handler(CommandHandler("work", work))
-app.add_handler(CommandHandler("daily", daily))
-app.add_handler(CommandHandler("rob", rob))
-app.add_handler(CommandHandler("protect", protect))
-app.add_handler(CommandHandler("toprich", toprich))
-app.add_handler(CommandHandler("topkill", topkill))
-app.add_handler(CommandHandler("kill", kill))
-app.add_handler(CommandHandler("revive", revive))
-app.add_handler(CommandHandler("close", close))
-app.add_handler(CommandHandler("open", open_economy))
-app.add_handler(CommandHandler("claim", claim))
-app.add_handler(CommandHandler("own", own))
-app.add_handler(CommandHandler("couple", couple))
-app.add_handler(CommandHandler("crush", crush))
-app.add_handler(CommandHandler("love", love))
-app.add_handler(CommandHandler("slap", slap))
-app.add_handler(CommandHandler("items", items))
-app.add_handler(CommandHandler("item", item))
-app.add_handler(CommandHandler("give", give))
+
+# -------------------- RUN BOT --------------------
+def main():
+    app = Application.builder().token(TOKEN).build()
+
+    # Basic
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("balance", balance))
+    app.add_handler(CommandHandler("work", work))
+
+    # Imported commands
+    app.add_handler(CommandHandler("claim", claim))
+    app.add_handler(CommandHandler("own", own))
+    app.add_handler(CommandHandler("couple", couple))
+    app.add_handler(CommandHandler("crush", crush))
+    app.add_handler(CommandHandler("love", love))
+    app.add_handler(CommandHandler("slap", slap))
+    app.add_handler(CommandHandler("items", items))
+    app.add_handler(CommandHandler("item", item))
+    app.add_handler(CommandHandler("give", give))
+    app.add_handler(CommandHandler("daily", daily))
+    app.add_handler(CommandHandler("rob", rob))
+    app.add_handler(CommandHandler("protect", protect))
+    app.add_handler(CommandHandler("toprich", toprich))
+    app.add_handler(CommandHandler("topkill", topkill))
+    app.add_handler(CommandHandler("kill", kill))
+    app.add_handler(CommandHandler("revive", revive))
+    app.add_handler(CommandHandler("open", open_cmd))
+    app.add_handler(CommandHandler("close", close_cmd))
+
+    app.run_polling()
 
 if __name__ == "__main__":
-    app.run_polling()
+    main()
