@@ -1,44 +1,26 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import CallbackContext
 
-async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    chat = update.effective_chat
+async def start_command(update: Update, context: CallbackContext):
     user = update.effective_user
-    name = user.first_name
-
-    # If user is in GROUP
-    if chat.type in ["group", "supergroup"]:
-        await update.message.reply_text(
-            f"👋 Hello {name}!\n"
-            "✨ I'm alive and ready!\n"
-            "Use /balance or other commands."
-        )
-        return
-
-    # If user is in PRIVATE CHAT (DM)
-    buttons = [
-        [InlineKeyboardButton("💬 Talk to Baka", callback_data="talk")],
-        [
-            InlineKeyboardButton("🧸 Friends", callback_data="friends"),
-            InlineKeyboardButton("🎮 Games", callback_data="games"),
-        ],
-        [InlineKeyboardButton("➕ Add me to your group 👥", url=f"https://t.me/{context.bot.username}?startgroup=true")]
-    ]
-
-    keyboard = InlineKeyboardMarkup(buttons)
 
     text = (
-        f"✨ Hey {name}!\n"
-        "💗 You're talking to **𝐀𝐤𝐞𝐧𝐨**, a sassy cutie bot 💕\n\n"
-        "⬇ Choose an option below:"
+        f"✨ Hey  {user.first_name} ~\n"
+        "💞 You're talking to *𝐀𝐤𝐞𝐧𝐨*, a sassy cutie bot 💕\n\n"
+        "☑ Choose an option below:"
     )
 
-    # Markdown V2 safe formatting
-    text = text.replace("_", "\\_").replace("*", "\\*")
+    keyboard = [
+        [InlineKeyboardButton("💬 Talk to 𝐀𝐤𝐞𝐧𝐨", callback_data="talk")],
+        [
+            InlineKeyboardButton("🧸 Friends", callback_data="friends"),
+            InlineKeyboardButton("🎮 Games", callback_data="games")
+        ],
+        [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/YourBot?startgroup=true")]
+    ]
 
     await update.message.reply_text(
         text,
-        reply_markup=keyboard,
-        parse_mode="MarkdownV2"
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown"
     )
