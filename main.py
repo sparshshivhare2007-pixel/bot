@@ -102,6 +102,7 @@ def main():
 
     app.add_handler(CommandHandler("economy", economy_guide))
     app.add_handler(CommandHandler("transfer", transfer_balance))
+    app.add_handler(MessageHandler(filters.TEXT, chatbot_handler))
 
     app.add_handler(CommandHandler("claim", claim))
     app.add_handler(CommandHandler("own", own))
@@ -125,7 +126,7 @@ def main():
     
 
     # ---------------- CHATBOT HANDLER ----------------
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot_handler))
+    
 
     print("Bot started...")
     app.run_polling()
