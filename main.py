@@ -91,15 +91,15 @@ def main():
     # ---- CUSTOM START HANDLER ----
     app.add_handler(CommandHandler("start", start_command))
 
-    # ---- CALLBACK HANDLER FOR BUTTONS (Now imported) ----
+    # ---- CALLBACK HANDLER ----
     app.add_handler(CallbackQueryHandler(button_handler))
 
     # ---- BASIC COMMANDS ----
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("work", work))
 
-    # ---- ECONOMY GUIDE COMMAND ----
-    app.add_handler(CommandHandler("economy", economy_guide)) # <-- NEW HANDLER FOR /economy
+    # ---- ECONOMY GUIDE ----
+    app.add_handler(CommandHandler("economy", economy_guide))
 
     # ---- OTHER COMMANDS ----
     app.add_handler(CommandHandler("claim", claim))
@@ -121,11 +121,9 @@ def main():
     app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_economy))
     app.add_handler(CommandHandler("transfer", transfer_balance))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot_handler)) 
+
+    # ---- CHATBOT HANDLER (CORRECT PLACE) ----
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot_handler))
 
     print("Bot started...")
     app.run_polling()
-
-
-if __name__ == "__main__":
-    main()
