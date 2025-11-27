@@ -70,7 +70,6 @@ async def work(update, context):
 # -------------------- OTHER COMMANDS --------------------
 from commands.claim import claim
 from commands.own import own
-from commands.couple import couple
 from commands.crush import crush
 from commands.love import love
 from commands.slap import slap
