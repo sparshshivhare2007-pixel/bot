@@ -10,6 +10,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 # -------------------- IMPORT START COMMAND & HANDLER --------------------
 # Importing both start_command and the updated button_handler from start_command.py
 from commands.start_command import start_command, button_handler 
+from commands.economy_guide import economy_guide
 
 # -------------------- BASIC COMMANDS --------------------
 async def balance(update, context):
