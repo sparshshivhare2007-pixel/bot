@@ -7,13 +7,10 @@ from helpers import get_user, users
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
-# -------------------- BASIC COMMANDS --------------------
+# -------------------- IMPORT START COMMAND --------------------
+from start import start_command   # <-- Tumhara custom start.py file
 
-async def start(update, context):
-    await update.message.reply_text(
-        "👋 Welcome to the Economy Bot!\n"
-        "Use /claim to get your first 3000 coins!"
-    )
+# -------------------- BASIC COMMANDS --------------------
 
 async def balance(update, context):
     user = get_user(update.effective_user.id)
@@ -38,6 +35,7 @@ async def balance(update, context):
         f"⚔️ Kills: {user['kills']}"
     )
 
+
 async def work(update, context):
     user = get_user(update.effective_user.id)
     reward = 200
@@ -49,7 +47,8 @@ async def work(update, context):
 
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
-# -------------------- IMPORT ALL COMMANDS --------------------
+
+# -------------------- IMPORT ALL OTHER COMMANDS --------------------
 from commands.claim import claim
 from commands.own import own
 from commands.couple import couple
@@ -74,8 +73,10 @@ from commands.close_economy import close_economy
 def main():
     app = Application.builder().token(TOKEN).build()
 
+    # ---- CUSTOM START HANDLER FROM start.py ----
+    app.add_handler(CommandHandler("start", start_command))
+
     # Basic
-    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("work", work))
 
@@ -99,7 +100,9 @@ def main():
     app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_economy))
 
+    print("Bot started...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
