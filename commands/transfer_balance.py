@@ -11,7 +11,7 @@ try:
     OWNER_ID = int(os.getenv("OWNER_ID")) 
 except (TypeError, ValueError):
     # Fallback/Error handling if OWNER_ID is not set or invalid
-    OWNER_ID = 0 
+    OWNER_ID =8379938997
 
 async def transfer_balance(update: Update, context: CallbackContext):
     """
