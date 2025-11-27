@@ -1,4 +1,6 @@
 import os
+from telegram import Update
+from telegram.ext import ContextTypes
 from dotenv import load_dotenv
 from telegram.ext import (
     Application,
@@ -62,7 +64,14 @@ async def balance(update, context):
     )
 
 
-async def work(update, context):
+# Global error handler
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    print(f"⚠️ Exception while handling an update: {context.error}")
+    # Optional: reply to user
+    if isinstance(update, Update) and update.effective_message:
+        await update.effective_message.reply_text("❌ Something went wrong!")
+        
+        async def work(update, context):
     user = get_user(update.effective_user.id)
     reward = 200
 
@@ -97,6 +106,7 @@ from commands.close_economy import close_economy
 # -------------------- RUN BOT --------------------
 def main():
     app = Application.builder().token(TOKEN).build()
+    app.add_error_handler(error_handler)
 
     # MAIN COMMANDS
     app.add_handler(CommandHandler("start", start_command))
