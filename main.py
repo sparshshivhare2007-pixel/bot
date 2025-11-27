@@ -16,6 +16,10 @@ users = db["users"]
 groups = db["groups"]  # to store group economy status
 
 # ----------------- Helper Functions -----------------
+def is_killed(user_id):
+    user = users.find_one({"user_id": user_id})
+    return user.get("killed", False)
+
 def get_user(user_id):
     user = users.find_one({"user_id": user_id})
     if not user:
@@ -161,11 +165,79 @@ async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(msg)
 
+# ----------------- /kill -----------------
+
+async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_group_open(update.effective_chat.id):
+        return await update.message.reply_text("❌ Economy commands are closed in this group!")
+
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("⚠️ Reply to the user you want to kill.")
+
+    killer_id = update.effective_user.id
+    target_id = update.message.reply_to_message.from_user.id
+
+    if killer_id == target_id:
+        return await update.message.reply_text("❌ Apne aap ko nahi maar sakte!")
+
+    target = get_user(target_id)
+
+    if target.get("killed", False):
+        return await update.message.reply_text("❌ Ye user already killed hai. Revive karo!")
+
+    # Update killer kills
+    users.update_one({"user_id": killer_id}, {"$inc": {"kills": 1}})
+
+    # Kill target
+    users.update_one(
+        {"user_id": target_id},
+        {"$set": {"balance": 0, "killed": True}}
+    )
+
+    killer_name = update.effective_user.first_name
+    target_name = update.message.reply_to_message.from_user.first_name
+
+    await update.message.reply_text(
+        f"⚔️ **{killer_name}** ne **{target_name}** ko kill kar diya!\n"
+        f"💀 Ab {target_name} ka balance 0 ho gaya hai aur woh killed status me hai!"
+    )
+    
+# ----------------- /revive -----------------
+async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("⚠️ Reply to the user you want to revive.")
+
+    target_id = update.message.reply_to_message.from_user.id
+    target = get_user(target_id)
+
+    if not target.get("killed", False):
+        return await update.message.reply_text("❌ Ye user killed nahi hai!")
+
+    # Revive cost from target
+    if target["balance"] < 200:
+        return await update.message.reply_text("❌ Target ke paas revive ke liye 200 coins nahi hai!")
+
+    new_balance = target["balance"] - 200
+
+    users.update_one(
+        {"user_id": target_id},
+        {"$set": {"balance": new_balance, "killed": False}}
+    )
+
+    name = update.message.reply_to_message.from_user.first_name
+
+    await update.message.reply_text(
+        f"❤️ {name} ka revive ho gaya!\n"
+        f"💰 200 coins deduct hue\n"
+        f"📌 New Balance: {new_balance}"
+    )
+
 # ----------------- /close -----------------
 async def close(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type in ["group", "supergroup"]:
         set_group_status(update.effective_chat.id, False)
         await update.message.reply_text("❌ Economy commands are now CLOSED in this group!")
+
 
 # ----------------- /open -----------------
 async def open_economy(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -187,6 +259,9 @@ app.add_handler(CommandHandler("toprich", toprich))
 app.add_handler(CommandHandler("topkill", topkill))
 app.add_handler(CommandHandler("close", close))
 app.add_handler(CommandHandler("open", open_economy))
+app.add_handler(CommandHandler("kill", kill))
+app.add_handler(CommandHandler("revive", revive))
+
 
 if __name__ == "__main__":
     app.run_polling()
