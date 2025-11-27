@@ -22,7 +22,10 @@ def get_user(user_id):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
-    await update.message.reply_text(f"👋 Welcome {update.effective_user.first_name}!\nYour balance is: 💰 {user['balance']} coins")
+    await update.message.reply_text(
+        f"👋 Welcome {update.effective_user.first_name}!\n"
+        f"Your balance is: 💰 {user['balance']} coins"
+    )
 
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
@@ -42,3 +45,4 @@ app.add_handler(CommandHandler("balance", balance))
 app.add_handler(CommandHandler("work", work))
 
 app.run_polling()
+
