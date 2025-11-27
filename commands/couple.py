@@ -28,12 +28,9 @@ async def couple(update, context):
             parse_mode="Markdown"
         )
 
-    # 2. Select random users from chat (using message history)
-    users = []
-
-    async for msg in context.bot.get_chat_history(chat_id, limit=50):
-        if msg.from_user and msg.from_user.id not in [u.id for u in users]:
-            users.append(msg.from_user)
+    # 2. Get all chat members (admins only works in PTB 20+)
+    members = await context.bot.get_chat_administrators(chat_id)
+    users = [m.user for m in members if not m.user.is_bot]
 
     if len(users) < 2:
         return await update.message.reply_text("❌ Not enough users to create a couple.")
@@ -47,7 +44,7 @@ async def couple(update, context):
     imgs = os.listdir(folder)
     img = os.path.join(folder, random.choice(imgs))
 
-    # 5. Save to DB
+    # 5. Save the couple to DB
     couples.insert_one({
         "chat_id": chat_id,
         "date": date,
