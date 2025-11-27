@@ -9,15 +9,18 @@ from telegram.ext import (
 )
 from helpers import get_user, users
 
-# Load ENV
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
-# -------------------- IMPORT START COMMAND & HANDLER --------------------
+# START + BUTTON HANDLER
 from commands.start_command import start_command, button_handler
 from commands.economy_guide import economy_guide
 from commands.transfer_balance import transfer_balance
-from commands.chatbot_handler import chatbot_handler
+
+# CHATBOT
+from chatbot.chatbot_handler import chatbot_handler
+
+
 
 # -------------------- BASIC COMMANDS --------------------
 async def balance(update, context):
@@ -48,6 +51,7 @@ async def balance(update, context):
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
 
+
 async def work(update, context):
     user = get_user(update.effective_user.id)
     reward = 200
@@ -59,7 +63,9 @@ async def work(update, context):
 
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
-# -------------------- IMPORT OTHER COMMANDS --------------------
+
+
+# -------------------- OTHER COMMANDS --------------------
 from commands.claim import claim
 from commands.own import own
 from commands.couple import couple
@@ -78,6 +84,10 @@ from commands.kill import kill
 from commands.revive import revive
 from commands.open_economy import open_economy
 from commands.close_economy import close_economy
+
+
+
+
 
 # -------------------- RUN BOT --------------------
 def main():
@@ -116,6 +126,8 @@ def main():
 
     print("Bot started...")
     app.run_polling()
+
+
 
 if __name__ == "__main__":
     main()
