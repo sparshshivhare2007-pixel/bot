@@ -27,7 +27,8 @@ async def balance(update, context):
         try:
             rank = rank_data[0]["users"].index(update.effective_user.id) + 1 
         except ValueError:
-            rank = len(rank_data[0]["users"]) + 1 # User not found in list, put them last
+            # User not found in list, put them last
+            rank = len(rank_data[0]["users"]) + 1 
     else:
         rank = 1
         
@@ -56,7 +57,7 @@ async def work(update, context):
 
 
 # -------------------- REMOVED OLD CALLBACK QUERY HANDLER --------------------
-# The old button_handler has been removed since the updated one is imported 
+# The old button_handler was removed since the updated one is imported 
 # from commands.start_command.
 
 # -------------------- IMPORT ALL OTHER COMMANDS --------------------
@@ -78,7 +79,7 @@ from commands.kill import kill
 from commands.revive import revive
 from commands.open_economy import open_economy
 from commands.close_economy import close_economy
-
+from commands.economy_guide import economy_guide # <-- NEW IMPORT
 
 # -------------------- RUN BOT --------------------
 def main():
@@ -93,6 +94,9 @@ def main():
     # ---- BASIC COMMANDS ----
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("work", work))
+
+    # ---- ECONOMY GUIDE COMMAND ----
+    app.add_handler(CommandHandler("economy", economy_guide)) # <-- NEW HANDLER FOR /economy
 
     # ---- OTHER COMMANDS ----
     app.add_handler(CommandHandler("claim", claim))
