@@ -25,6 +25,11 @@ from commands.couple import couple
 
 
 # -------------------- BASIC COMMANDS --------------------
+async def track_users(update, context):
+    if update.effective_chat.type in ["group", "supergroup"]:
+        user = update.effective_user
+        add_group_user(update.effective_chat.id, user.id, user.first_name)
+
 async def balance(update, context):
     user = get_user(update.effective_user.id)
 
