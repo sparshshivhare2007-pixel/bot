@@ -2,23 +2,26 @@ import random
 from telegram import Update
 from telegram.ext import ContextTypes
 
-# Minimal couple command
+# Minimal working couple command
 async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
-    # Get at least 2 users: just the sender and the bot itself for demo
+    # Try to get some members (just sender for now)
     members = [update.effective_user]
 
+    # Check if enough members
     if len(members) < 2:
-        return await update.message.reply_text("❌ Not enough users to select a couple!")
+        # Duplicate sender to make 2 for demo
+        members = members * 2
 
-    # Pick random couple (in this minimal case, same user twice)
-    p1, p2 = random.sample(members * 2, 2)  # duplicate to ensure 2
+    # Pick 2 random members
+    p1, p2 = random.sample(members, 2)
     name1 = p1.first_name
     name2 = p2.first_name
 
+    # Send result
     caption = (
-        "💖 *Today's Cute Couple* 💖\n\n"
+        f"💖 *Today's Cute Couple* 💖\n\n"
         f"{name1} ❤️ {name2}\n\n"
         "Love is in the air 💘\n\n"
         "~ From Shizu with love 💋"
