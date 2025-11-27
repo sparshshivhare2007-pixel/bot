@@ -8,7 +8,7 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
 # -------------------- IMPORT START COMMAND --------------------
-from start import start_command   # <-- Tumhara custom start.py file
+from commands.start import start_command
 
 # -------------------- BASIC COMMANDS --------------------
 
