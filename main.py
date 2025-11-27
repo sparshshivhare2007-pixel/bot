@@ -1,181 +1,175 @@
-import logging
+import os
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from pymongo import MongoClient
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler,
-    ContextTypes
-)
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO
-)
+load_dotenv()
 
-# ============================
-#  MONGODB CONNECTION
-# ============================
-MONGO_URL = "YOUR_MONGO_URL"
-client = MongoClient(MONGO_URL)
-db = client["economy"]
+TOKEN = os.getenv("BOT_TOKEN")
+MONGO_URI = os.getenv("MONGO_URI")
+
+client = MongoClient(MONGO_URI)
+db = client["economy_bot"]
 users = db["users"]
+groups = db["groups"]  # to store group economy status
 
-# ============================
-#  START COMMAND
-# ============================
+# ----------------- Helper Functions -----------------
+def get_user(user_id):
+    user = users.find_one({"user_id": user_id})
+    if not user:
+        users.insert_one({"user_id": user_id, "balance": 0, "kills": 0})
+        user = users.find_one({"user_id": user_id})
+    return user
+
+def is_group_open(chat_id):
+    group = groups.find_one({"chat_id": chat_id})
+    return group.get("open", True) if group else True
+
+def set_group_status(chat_id, status: bool):
+    groups.update_one({"chat_id": chat_id}, {"$set": {"open": status}}, upsert=True)
+
+# ----------------- /start -----------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
+    user = get_user(update.effective_user.id)
     name = update.effective_user.first_name
 
-    if not users.find_one({"user_id": uid}):
-        users.insert_one({"user_id": uid, "balance": 1000, "killed": False})
-
-    await update.message.reply_text(
-        f"👋 Hello {name}!\nYour account is ready with 1000 coins."
+    bot_title = "🔱 SPARSH ECONOMY BOT 🔱"
+    custom_msg = (
+        "✨ Welcome to the Economy World!\n"
+        "🔥 Earn coins using work, daily & more!\n"
+        "💼 Use buttons below to visit support."
     )
 
-# ============================
-#  OPEN & CLOSE
-# ============================
-game_open = True
+    keyboard = [
+        [
+            InlineKeyboardButton("💬 Support Group", url="https://t.me/mich_family_group"),
+            InlineKeyboardButton("📢 Support Channel", url="https://t.me/mich_family_group")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-async def open_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global game_open
-    game_open = True
-    await update.message.reply_text("✔️ Game is now OPEN!")
+    await update.message.reply_text(
+        f"{bot_title}\n\n👋 Hello **{name}**!\n\n{custom_msg}\n\n💰 Your balance: {user['balance']} coins",
+        reply_markup=reply_markup
+    )
 
-async def close_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global game_open
-    game_open = False
-    await update.message.reply_text("❌ Game is now CLOSED!")
-
-# ============================
-#  BALANCE
-# ============================
-async def bal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ----------------- /balance or /bal -----------------
+async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.reply_to_message:
-        target = update.message.reply_to_message.from_user
-        t = users.find_one({"user_id": target.id})
-        bal = t["balance"] if t else 0
+        user_id = update.message.reply_to_message.from_user.id
+    else:
+        user_id = update.effective_user.id
+    user = get_user(user_id)
+    await update.message.reply_text(f"💰 Balance: {user['balance']} coins")
 
-        name = f"@{target.username}" if target.username else target.first_name
-        return await update.message.reply_text(f"💰 {name}'s Balance: {bal}")
+# ----------------- /work -----------------
+async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_group_open(update.effective_chat.id):
+        return await update.message.reply_text("❌ Economy commands are closed in this group!")
 
-    uid = update.effective_user.id
-    u = users.find_one({"user_id": uid})
-    bal = u["balance"] if u else 0
-    await update.message.reply_text(f"💰 Your Balance: {bal}")
+    user = get_user(update.effective_user.id)
+    earn = 100
+    new_balance = user["balance"] + earn
+    users.update_one({"user_id": user["user_id"]}, {"$set": {"balance": new_balance}})
+    await update.message.reply_text(f"🛠 You worked and earned {earn} coins!\n💰 New Balance: {new_balance}")
 
-# ============================
-#  TOP RICHEST
-# ============================
+# ----------------- /daily -----------------
+async def daily(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_group_open(update.effective_chat.id):
+        return await update.message.reply_text("❌ Economy commands are closed in this group!")
+
+    user = get_user(update.effective_user.id)
+    now = datetime.utcnow()
+
+    if "last_daily" in user:
+        last = user["last_daily"]
+        if now - last < timedelta(hours=24):
+            remaining = timedelta(hours=24) - (now - last)
+            hours = remaining.seconds // 3600
+            mins = (remaining.seconds % 3600) // 60
+            return await update.message.reply_text(f"⏳ Already claimed!\nNext claim: {hours}h {mins}m")
+
+    reward = 500
+    new_balance = user["balance"] + reward
+    users.update_one({"user_id": user["user_id"]}, {"$set": {"balance": new_balance, "last_daily": now}})
+    await update.message.reply_text(f"🎁 Daily Reward Claimed!\nEarned: {reward} coins\n💰 New Balance: {new_balance}")
+
+# ----------------- /rob -----------------
+async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_group_open(update.effective_chat.id):
+        return await update.message.reply_text("❌ Economy commands are closed in this group!")
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("⚠️ Reply to the user you want to rob.")
+    
+    user = get_user(update.effective_user.id)
+    target_user_id = update.message.reply_to_message.from_user.id
+    target = get_user(target_user_id)
+
+    import random
+    amount = random.randint(1, min(1000, target["balance"]))
+    if target["balance"] < amount:
+        return await update.message.reply_text("❌ Target has no coins to rob!")
+    
+    users.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": amount}})
+    users.update_one({"user_id": target_user_id}, {"$inc": {"balance": -amount}})
+    await update.message.reply_text(f"💸 You robbed {amount} coins from {update.message.reply_to_message.from_user.first_name}!")
+
+# ----------------- /protect -----------------
+async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_group_open(update.effective_chat.id):
+        return await update.message.reply_text("❌ Economy commands are closed in this group!")
+    import random
+    success = random.choice([True, False])
+    user = get_user(update.effective_user.id)
+    if success:
+        await update.message.reply_text("🛡 You are protected from the next robbery!")
+    else:
+        await update.message.reply_text("⚠️ Protection failed! Try again.")
+
+# ----------------- /toprich -----------------
 async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = users.find().sort("balance", -1).limit(10)
-    msg = "🏆 **Top 10 Richest Users:**\n\n"
+    top_users = users.find().sort("balance", -1).limit(10)
+    msg = "💰 Top 10 Richest Users:\n"
+    for u in top_users:
+        msg += f"{u.get('user_id')} - {u.get('balance')} coins\n"
+    await update.message.reply_text(msg)
 
-    for i, u in enumerate(data, start=1):
-        user_id = u["user_id"]
-        bal = u["balance"]
-
-        try:
-            user_obj = await context.bot.get_chat(user_id)
-            name = f"@{user_obj.username}" if user_obj.username else (user_obj.first_name or "Unknown")
-        except:
-            name = "Unknown"
-
-        msg += f"{i}. {name}: ${bal}\n"
-
-    msg += "\nNote: Use username for profile click"
-
-    await update.message.reply_text(msg, parse_mode="Markdown")
-
-# ============================
-#  TOP KILLERS
-# ============================
+# ----------------- /topkill -----------------
 async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = users.find({"killed": True}).limit(10)
+    top_users = users.find().sort("kills", -1).limit(10)
+    msg = "🔪 Top 10 Killers:\n"
+    for u in top_users:
+        msg += f"{u.get('user_id')} - {u.get('kills')} kills\n"
+    await update.message.reply_text(msg)
 
-    msg = "💀 **Top Killed Users:**\n\n"
+# ----------------- /close -----------------
+async def close(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type in ["group", "supergroup"]:
+        set_group_status(update.effective_chat.id, False)
+        await update.message.reply_text("❌ Economy commands are now closed in this group!")
 
-    for i, u in enumerate(data, start=1):
-        user_id = u["user_id"]
+# ----------------- /open -----------------
+async def open_economy(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type in ["group", "supergroup"]:
+        set_group_status(update.effective_chat.id, True)
+        await update.message.reply_text("✅ Economy commands are now open in this group!")
 
-        try:
-            user_obj = await context.bot.get_chat(user_id)
-            name = f"@{user_obj.username}" if user_obj.username else user_obj.first_name
-        except:
-            name = "Unknown"
+# ----------------- App Setup -----------------
+app = ApplicationBuilder().token(TOKEN).build()
 
-        msg += f"{i}. {name}\n"
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("balance", balance))
+app.add_handler(CommandHandler("bal", balance))
+app.add_handler(CommandHandler("work", work))
+app.add_handler(CommandHandler("daily", daily))
+app.add_handler(CommandHandler("rob", rob))
+app.add_handler(CommandHandler("protect", protect))
+app.add_handler(CommandHandler("toprich", toprich))
+app.add_handler(CommandHandler("topkill", topkill))
+app.add_handler(CommandHandler("close", close))
+app.add_handler(CommandHandler("open", open_economy))
 
-    await update.message.reply_text(msg, parse_mode="Markdown")
-
-# ============================
-#  KILL COMMAND
-# ============================
-async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("⚠️ Kisi ko kill karne ke liye reply karo!")
-
-    killer = update.effective_user
-    target = update.message.reply_to_message.from_user
-
-    if killer.id == target.id:
-        return await update.message.reply_text("❌ Khud ko thodi kill karega!")
-
-    users.update_one(
-        {"user_id": target.id},
-        {"$set": {"balance": 0, "killed": True}},
-        upsert=True
-    )
-
-    name = f"@{target.username}" if target.username else target.first_name
-
-    await update.message.reply_text(
-        f"⚔️ {name} **has been KILLED!**\n💀 Balance reset to **0**"
-    )
-
-# ============================
-#  REVIVE COMMAND
-# ============================
-async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("⚠️ Reply karke revive karo!")
-
-    reviver = update.effective_user
-    target = update.message.reply_to_message.from_user
-
-    r = users.find_one({"user_id": reviver.id})
-    if not r or r["balance"] < 200:
-        return await update.message.reply_text("❌ Revive ke liye 200 coins chahiye!")
-
-    t = users.find_one({"user_id": target.id})
-    if not t or not t.get("killed"):
-        return await update.message.reply_text("❌ Ye banda killed hi nahi hai!")
-
-    users.update_one({"user_id": reviver.id}, {"$inc": {"balance": -200}})
-    users.update_one({"user_id": target.id}, {"$set": {"killed": False}})
-
-    name = f"@{target.username}" if target.username else target.first_name
-
-    await update.message.reply_text(
-        f"❤️ {name} **revived successfully!**\n💸 Cost: 200 coins"
-    )
-
-# ============================
-#  MAIN APP
-# ============================
-async def main():
-    app = ApplicationBuilder().token("YOUR_BOT_TOKEN").build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("open", open_cmd))
-    app.add_handler(CommandHandler("close", close_cmd))
-    app.add_handler(CommandHandler("bal", bal))
-    app.add_handler(CommandHandler("toprich", toprich))
-    app.add_handler(CommandHandler("topkill", topkill))
-    app.add_handler(CommandHandler("kill", kill))
-    app.add_handler(CommandHandler("revive", revive))
-
-    print("BOT STARTED WITH POLLING...")
-    await app.run_polling()
-
+if __name__ == "__main__":
+    app.run_polling()
