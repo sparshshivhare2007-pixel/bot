@@ -183,6 +183,23 @@ async def open(update: Update, context: ContextTypes.DEFAULT_TYPE):
     set_group_status(chat_id, True)
     await update.message.reply_text("✅ Economy commands are now enabled in this group!")
 
+# ---------------- /bal ----------------
+async def bal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    if not get_group_status(chat_id):
+        return await update.message.reply_text("❌ Economy commands are disabled in this group!")
+
+    if update.message.reply_to_message:  # Reply kiya user ko
+        target_id = update.message.reply_to_message.from_user.id
+        user = get_user(target_id)
+        name = update.message.reply_to_message.from_user.first_name
+        await update.message.reply_text(f"💰 {name}'s balance: {user['balance']} coins")
+    else:  # Apna balance
+        user_id = update.effective_user.id
+        user = get_user(user_id)
+        await update.message.reply_text(f"💰 Your balance: {user['balance']} coins")
+
+
 # ---------------- Polling Setup ----------------
 app = ApplicationBuilder().token(TOKEN).build()
 
@@ -195,6 +212,8 @@ app.add_handler(CommandHandler("rob", rob))
 app.add_handler(CommandHandler("protect", protect))
 app.add_handler(CommandHandler("close", close))
 app.add_handler(CommandHandler("open", open))
+app.add_handler(CommandHandler("bal", bal))
+
 
 # Run bot
 if __name__ == "__main__":
