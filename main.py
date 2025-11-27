@@ -1,6 +1,12 @@
 import os
 from dotenv import load_dotenv
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,
+    filters
+)
 from helpers import get_user, users
 
 # Load ENV
@@ -8,8 +14,7 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
 # -------------------- IMPORT START COMMAND & HANDLER --------------------
-# Importing both start_command and the updated button_handler from start_command.py
-from commands.start_command import start_command, button_handler 
+from commands.start_command import start_command, button_handler
 from commands.economy_guide import economy_guide
 from commands.transfer_balance import transfer_balance
 from commands.chatbot_handler import chatbot_handler
@@ -18,23 +23,20 @@ from commands.chatbot_handler import chatbot_handler
 async def balance(update, context):
     user = get_user(update.effective_user.id)
 
-    # Global Rank Calculation
     rank_pipeline = [
         {"$sort": {"balance": -1}},
         {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
     ]
 
     rank_data = list(users.aggregate(rank_pipeline))
-    # Correctly handle if rank_data is empty
     if rank_data and rank_data[0]["users"]:
         try:
-            rank = rank_data[0]["users"].index(update.effective_user.id) + 1 
+            rank = rank_data[0]["users"].index(update.effective_user.id) + 1
         except ValueError:
-            # User not found in list, put them last
-            rank = len(rank_data[0]["users"]) + 1 
+            rank = len(rank_data[0]["users"]) + 1
     else:
         rank = 1
-        
+
     status = "☠️ Dead" if user.get("killed") else "Alive"
     name = update.effective_user.first_name
 
@@ -45,7 +47,6 @@ async def balance(update, context):
         f"❤️ 𝐒𝐭𝐚𝐭𝐮𝐬: {status}\n"
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
-
 
 async def work(update, context):
     user = get_user(update.effective_user.id)
@@ -58,12 +59,7 @@ async def work(update, context):
 
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
-
-# -------------------- REMOVED OLD CALLBACK QUERY HANDLER --------------------
-# The old button_handler was removed since the updated one is imported 
-# from commands.start_command.
-
-# -------------------- IMPORT ALL OTHER COMMANDS --------------------
+# -------------------- IMPORT OTHER COMMANDS --------------------
 from commands.claim import claim
 from commands.own import own
 from commands.couple import couple
@@ -82,26 +78,20 @@ from commands.kill import kill
 from commands.revive import revive
 from commands.open_economy import open_economy
 from commands.close_economy import close_economy
-from commands.economy_guide import economy_guide # <-- NEW IMPORT
 
 # -------------------- RUN BOT --------------------
 def main():
     app = Application.builder().token(TOKEN).build()
 
-    # ---- CUSTOM START HANDLER ----
     app.add_handler(CommandHandler("start", start_command))
-
-    # ---- CALLBACK HANDLER ----
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    # ---- BASIC COMMANDS ----
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("work", work))
 
-    # ---- ECONOMY GUIDE ----
     app.add_handler(CommandHandler("economy", economy_guide))
+    app.add_handler(CommandHandler("transfer", transfer_balance))
 
-    # ---- OTHER COMMANDS ----
     app.add_handler(CommandHandler("claim", claim))
     app.add_handler(CommandHandler("own", own))
     app.add_handler(CommandHandler("couple", couple))
@@ -120,10 +110,12 @@ def main():
     app.add_handler(CommandHandler("revive", revive))
     app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_economy))
-    app.add_handler(CommandHandler("transfer", transfer_balance))
 
-    # ---- CHATBOT HANDLER (CORRECT PLACE) ----
+    # ---------------- CHATBOT HANDLER ----------------
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot_handler))
 
     print("Bot started...")
     app.run_polling()
+
+if __name__ == "__main__":
+    main()
