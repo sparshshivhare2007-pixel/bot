@@ -14,7 +14,7 @@ async def start_command(update: Update, context: CallbackContext):
     keyboard = [
         [InlineKeyboardButton("💬 Talk to 𝐀𝐤𝐞𝐧𝐨", callback_data="talk")],
         [
-            InlineKeyboardButton("🧸 Friends", callback_data="friends"),
+            InlineKeyboardButton("🧸 Friends", url="https://t.me/mich_family_group")
             InlineKeyboardButton("🎮 Games", callback_data="games")
         ],
         [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/YourBot?startgroup=true")]
