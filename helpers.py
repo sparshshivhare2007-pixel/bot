@@ -15,6 +15,20 @@ couples = db["couples"]
 
 
 # ----------------- DB Helper Functions -----------------
+# --- Track Active Users Per Group ---
+def add_group_user(chat_id, user_id, name):
+    groups.update_one(
+        {"chat_id": chat_id},
+        {"$addToSet": {"users": {"user_id": user_id, "name": name}}},
+        upsert=True
+    )
+
+def get_group_users(chat_id):
+    group = groups.find_one({"chat_id": chat_id})
+    if group and "users" in group:
+        return group["users"]
+    return []
+
 def get_user(user_id):
     user = users.find_one({"user_id": user_id})
     if not user:
