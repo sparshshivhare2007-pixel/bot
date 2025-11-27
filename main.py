@@ -129,33 +129,43 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Protection failed! Try again.")
 
 # ----------------- /toprich -----------------
-
-async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_users = users.find().sort("balance", -1).limit(10)
-    msg = "🏆 Top 10 Richest Users:\n\n"
-    for i, user in enumerate(top_users, 1):
-        name = user.get("first_name") or "Unknown"
-        username = user.get("username")
-        if username:
-            display = f"[{name}](https://t.me/{username})"
-        else:
-            display = name
-        msg += f"{i}. {display}: ${user['balance']}\n"
-    await update.message.reply_text(msg, parse_mode="Markdown")
+    msg = "🏆 Top 10 Richest Users:\n"
+
+    for idx, user in enumerate(top_users, start=1):
+        try:
+            chat = await context.bot.get_chat(user["user_id"])
+            name = chat.first_name or "Unknown"
+            username = f"@{chat.username}" if chat.username else name
+        except:
+            name = "Unknown"
+            username = "Unknown"
+
+        msg += f"{idx}. {username}: ${user['balance']}\n"
+
+    msg += "\nNote: Use username for making your profile clickable"
+    await update.message.reply_text(msg)
+
 
 # ----------------- /topkill -----------------
 async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_users = users.find().sort("kills", -1).limit(10)
-    msg = "🔪 Top 10 Killers:\n\n"
-    for i, user in enumerate(top_users, 1):
-        name = user.get("first_name") or "Unknown"
-        username = user.get("username")
-        if username:
-            display = f"[{name}](https://t.me/{username})"
-        else:
-            display = name
-        msg += f"{i}. {display}: {user['kills']} kills\n"
-    await update.message.reply_text(msg, parse_mode="Markdown")
+    msg = "⚔️ Top 10 Killers:\n"
+
+    for idx, user in enumerate(top_users, start=1):
+        try:
+            chat = await context.bot.get_chat(user["user_id"])
+            name = chat.first_name or "Unknown"
+            username = f"@{chat.username}" if chat.username else name
+        except:
+            name = "Unknown"
+            username = "Unknown"
+
+        msg += f"{idx}. {username}: {user.get('kills', 0)}\n"
+
+    await update.message.reply_text(msg)
+
 
 # ----------------- /close -----------------
 async def close(update: Update, context: ContextTypes.DEFAULT_TYPE):
