@@ -11,11 +11,11 @@ async def start_command(update: Update, context: CallbackContext):
         "☑ Choose an option below:"
     )
 
-    keyboard = [
-        [InlineKeyboardButton("💬 Talk to 𝐀𝐤𝐞𝐧𝐨", callback_data="talk")],
-        [
+   keyboard = [
+        [InlineKeyboardButton("💬 Talk to 𝐀𝐤𝐞𝐧𝐨", callback_data="talk")],  # <--- यह एक सब-लिस्ट है
+        [ # <--- दूसरी सब-लिस्ट यहाँ शुरू होती है
             InlineKeyboardButton("🧸 Friends", url="https://t.me/mich_family_group")
-            InlineKeyboardButton("🎮 Games", callback_data="games")
+            InlineKeyboardButton("🎮 Games", callback_data="games")  # <--- यहाँ कॉमा मिसिंग है!
         ],
         [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/YourBot?startgroup=true")]
     ]
