@@ -11,6 +11,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 # Importing both start_command and the updated button_handler from start_command.py
 from commands.start_command import start_command, button_handler 
 from commands.economy_guide import economy_guide
+from commands.transfer_balance import transfer_balance 
 
 # -------------------- BASIC COMMANDS --------------------
 async def balance(update, context):
@@ -118,6 +119,7 @@ def main():
     app.add_handler(CommandHandler("revive", revive))
     app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_economy))
+    app.add_handler(CommandHandler("transfer", transfer_balance)) 
 
     print("Bot started...")
     app.run_polling()
