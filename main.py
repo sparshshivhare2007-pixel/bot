@@ -7,8 +7,9 @@ from helpers import get_user, users
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
-# -------------------- IMPORT START COMMAND --------------------
-from commands.start_command import start_command
+# -------------------- IMPORT START COMMAND & HANDLER --------------------
+# Importing both start_command and the updated button_handler from start_command.py
+from commands.start_command import start_command, button_handler 
 
 # -------------------- BASIC COMMANDS --------------------
 async def balance(update, context):
@@ -21,7 +22,15 @@ async def balance(update, context):
     ]
 
     rank_data = list(users.aggregate(rank_pipeline))
-    rank = rank_data[0]["users"].index(update.effective_user.id) + 1 if rank_data else 1
+    # Correctly handle if rank_data is empty
+    if rank_data and rank_data[0]["users"]:
+        try:
+            rank = rank_data[0]["users"].index(update.effective_user.id) + 1 
+        except ValueError:
+            rank = len(rank_data[0]["users"]) + 1 # User not found in list, put them last
+    else:
+        rank = 1
+        
     status = "☠️ Dead" if user.get("killed") else "Alive"
     name = update.effective_user.first_name
 
@@ -46,21 +55,9 @@ async def work(update, context):
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
 
-# -------------------- CALLBACK QUERY HANDLER --------------------
-async def button_handler(update, context):
-    query = update.callback_query
-    await query.answer()  # Mandatory to notify Telegram
-
-    if query.data == "friends":
-        await query.message.reply_text(
-            "Join my awesome group! 👥\n👉 [Click Here](https://t.me/YourGroupLink)",
-            parse_mode="Markdown"
-        )
-    elif query.data == "talk":
-        await query.message.reply_text("Let's chat! 💬")
-    elif query.data == "games":
-        await query.message.reply_text("Check out the games! 🎮")
-
+# -------------------- REMOVED OLD CALLBACK QUERY HANDLER --------------------
+# The old button_handler has been removed since the updated one is imported 
+# from commands.start_command.
 
 # -------------------- IMPORT ALL OTHER COMMANDS --------------------
 from commands.claim import claim
@@ -90,7 +87,7 @@ def main():
     # ---- CUSTOM START HANDLER ----
     app.add_handler(CommandHandler("start", start_command))
 
-    # ---- CALLBACK HANDLER FOR BUTTONS ----
+    # ---- CALLBACK HANDLER FOR BUTTONS (Now imported) ----
     app.add_handler(CallbackQueryHandler(button_handler))
 
     # ---- BASIC COMMANDS ----
