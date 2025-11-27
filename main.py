@@ -8,7 +8,7 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
 # -------------------- IMPORT START COMMAND --------------------
-from commands.start import start_command
+from commands.start_command import start_command
 
 # -------------------- BASIC COMMANDS --------------------
 
