@@ -30,7 +30,7 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = (
         f"✨ Hey {name}!\n"
-        "💗 You're talking to **Baka**, a sassy cutie bot 💕\n\n"
+        "💗 You're talking to **𝐀𝐤𝐞𝐧𝐨**, a sassy cutie bot 💕\n\n"
         "⬇ Choose an option below:"
     )
 
