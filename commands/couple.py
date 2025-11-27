@@ -2,7 +2,8 @@ import random
 import os
 from datetime import datetime
 from helpers import couples
-from telegram import ChatMemberStatus
+from telegram.constants import ChatMemberStatus  # fixed
+
 
 
 async def couple(update, context):
