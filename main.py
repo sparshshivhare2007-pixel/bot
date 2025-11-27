@@ -109,75 +109,69 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target = get_user(target_user_id)
 
     import random
+    if target["balance"] <= 0:
+        return await update.message.reply_text("❌ Target has no coins!")
+
     amount = random.randint(1, min(1000, target["balance"]))
-    if target["balance"] < amount:
-        return await update.message.reply_text("❌ Target has no coins to rob!")
-    
+
     users.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": amount}})
     users.update_one({"user_id": target_user_id}, {"$inc": {"balance": -amount}})
-    await update.message.reply_text(f"💸 You robbed {amount} coins from {update.message.reply_to_message.from_user.first_name}!")
+    await update.message.reply_text(f"💸 You robbed {amount} coins!")
 
 # ----------------- /protect -----------------
 async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_group_open(update.effective_chat.id):
         return await update.message.reply_text("❌ Economy commands are closed in this group!")
     import random
-    success = random.choice([True, False])
-    if success:
+    if random.choice([True, False]):
         await update.message.reply_text("🛡 You are protected from the next robbery!")
     else:
         await update.message.reply_text("⚠️ Protection failed! Try again.")
 
 # ----------------- /toprich -----------------
-    async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_users = users.find().sort("balance", -1).limit(10)
-    msg = "🏆 Top 10 Richest Users:\n"
+    msg = "🏆 Top 10 Richest Users:\n\n"
 
     for idx, user in enumerate(top_users, start=1):
         try:
             chat = await context.bot.get_chat(user["user_id"])
-            name = chat.first_name or "Unknown"
-            username = f"@{chat.username}" if chat.username else name
+            username = f"@{chat.username}" if chat.username else chat.first_name
         except:
-            name = "Unknown"
             username = "Unknown"
 
         msg += f"{idx}. {username}: ${user['balance']}\n"
 
-    msg += "\nNote: Use username for making your profile clickable"
+    msg += "\nNote: Use username for clickable profile."
     await update.message.reply_text(msg)
-
 
 # ----------------- /topkill -----------------
 async def topkill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_users = users.find().sort("kills", -1).limit(10)
-    msg = "⚔️ Top 10 Killers:\n"
+    msg = "⚔️ Top 10 Killers:\n\n"
 
     for idx, user in enumerate(top_users, start=1):
         try:
             chat = await context.bot.get_chat(user["user_id"])
-            name = chat.first_name or "Unknown"
-            username = f"@{chat.username}" if chat.username else name
+            username = f"@{chat.username}" if chat.username else chat.first_name
         except:
-            name = "Unknown"
             username = "Unknown"
 
-        msg += f"{idx}. {username}: {user.get('kills', 0)}\n"
+        msg += f"{idx}. {username}: {user.get('kills', 0)} kills\n"
 
     await update.message.reply_text(msg)
-
 
 # ----------------- /close -----------------
 async def close(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type in ["group", "supergroup"]:
         set_group_status(update.effective_chat.id, False)
-        await update.message.reply_text("❌ Economy commands are now closed in this group!")
+        await update.message.reply_text("❌ Economy commands are now CLOSED in this group!")
 
 # ----------------- /open -----------------
 async def open_economy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type in ["group", "supergroup"]:
         set_group_status(update.effective_chat.id, True)
-        await update.message.reply_text("✅ Economy commands are now open in this group!")
+        await update.message.reply_text("✅ Economy commands are now OPEN in this group!")
 
 # ----------------- App Setup -----------------
 app = ApplicationBuilder().token(TOKEN).build()
