@@ -108,8 +108,7 @@ def main():
     app.add_handler(CommandHandler("economy", economy_guide))
     app.add_handler(CommandHandler("transfer", transfer_balance))
 
-    # TRACK USERS (important)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
+    
 
     # FUN COMMANDS
     app.add_handler(CommandHandler("claim", claim))
