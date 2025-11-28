@@ -16,10 +16,10 @@ from helpers import get_user, users, add_group_user
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
-# START + BUTTON HANDLER
+# -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
 
-# ECONOMY
+# Economy
 from commands.economy_guide import economy_guide
 from commands.transfer_balance import transfer_balance
 from commands.claim import claim
@@ -39,7 +39,7 @@ from commands.kill import kill
 from commands.revive import revive
 from commands.open_economy import open_economy
 from commands.close_economy import close_economy
-from commands.punch import punch  # ✅ Import punch command
+from commands.punch import punch  # ✅ Import punch
 
 # Fun commands
 from commands.hug import hug
@@ -47,6 +47,7 @@ from commands.couple import couple
 
 # -------------------- TRACK GROUP USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Track users in groups, but do NOT block commands"""
     if update.effective_chat.type in ["group", "supergroup"]:
         user = update.effective_user
         add_group_user(update.effective_chat.id, user.id, user.first_name)
@@ -103,8 +104,8 @@ def main():
     app = Application.builder().token(TOKEN).build()
     app.add_error_handler(error_handler)
 
-    # Track group users
-    app.add_handler(MessageHandler(filters.ALL, track_users))
+    # Track group users (only non-command messages)
+    app.add_handler(MessageHandler(~filters.COMMAND, track_users))
 
     # Main commands
     app.add_handler(CommandHandler("start", start_command))
