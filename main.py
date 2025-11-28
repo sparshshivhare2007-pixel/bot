@@ -18,7 +18,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
-from commands.log_handler import log_start, log_added_to_group  # ✅ Correct function names
+from commands.log_handler import log_start, log_added_to_group
 
 # Economy
 from commands.economy_guide import economy_guide
@@ -40,7 +40,7 @@ from commands.kill import kill
 from commands.revive import revive
 from commands.open_economy import open_economy
 from commands.close_economy import close_economy
-from commands.punch import punch  # Import punch
+from commands.punch import punch
 
 # Fun commands
 from commands.hug import hug
@@ -48,13 +48,16 @@ from commands.couple import couple
 
 # -------------------- TRACK GROUP USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type in ["group", "supergroup"]:
+    if update.effective_chat and update.effective_chat.type in ["group", "supergroup"]:
         user = update.effective_user
-        add_group_user(update.effective_chat.id, user.id, user.first_name)
-
+        if user:
+            add_group_user(update.effective_chat.id, user.id, user.first_name)
 
 # -------------------- BALANCE COMMAND --------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+
     if update.message.reply_to_message:
         target_user = update.message.reply_to_message.from_user
         user_id = target_user.id
@@ -88,26 +91,20 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
 
-
 # -------------------- WORK COMMAND --------------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
     user = get_user(update.effective_user.id)
     reward = 200
-
-    users.update_one(
-        {"user_id": user["user_id"]},
-        {"$inc": {"balance": reward}}
-    )
-
+    users.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": reward}})
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
-
 
 # -------------------- ERROR HANDLER --------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Error: {context.error}")
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text("❌ Something went wrong!")
-
 
 # -------------------- MAIN --------------------
 def main():
@@ -117,13 +114,16 @@ def main():
     # Track users
     app.add_handler(MessageHandler(~filters.COMMAND, track_users))
 
-    # ---------- LOG HANDLERS ADDED ----------
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, log_added_to_group))  # Bot added log
-    app.add_handler(CommandHandler("start", log_start))  # Start log
-    # -----------------------------------------
+    # Log handlers
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, log_added_to_group))
+    
+    # Start command with logging inside
+    async def start_wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await log_start(update, context)  # log first
+        await start_command(update, context)  # then normal start
+    app.add_handler(CommandHandler("start", start_wrapper))
 
     # Main commands
-    app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(CommandHandler(["balance", "bal"], balance))
     app.add_handler(CommandHandler("work", work))
@@ -152,9 +152,13 @@ def main():
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
 
+    # Test command to ensure bot responds
+    async def test(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("✅ Bot is working!")
+    app.add_handler(CommandHandler("test", test))
+
     print("🚀 Bot Started... Polling mode active")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
