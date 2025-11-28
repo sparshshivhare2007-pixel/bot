@@ -10,24 +10,21 @@ async def start_command(update: Update, context: CallbackContext):
     user = update.effective_user
 
     text = (
-    f"⬤ 𖦹 {user.first_name} - ᴄᴜᴛɪᴇ, ꜱᴀꜱꜱʏ, ᴀ ʟɪᴛᴛʟᴇ ᴡɪʟᴅ ᴀɴᴅ ɢᴀᴍᴇ ᴘᴀʀᴛɴᴇʀ 🤍\n\n"
-    "⬤ ᴊᴜꜱᴛ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴀɴᴅ ᴇɴᴊᴏʏ ᴛʜᴇ ᴄʜᴀᴛꜱ ᴀɴᴅ ɢᴀᴍᴇꜱ ᴡɪᴛʜ ᴍᴇ ᴛʜᴀᴛ ᴍᴀᴋᴇꜱ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴡɪʟʟ ʙᴇ ᴍᴏꜱᴛ ᴀᴄᴛɪᴠᴇ!\n\n"
-    "☑ Choose an option below:"
-        
+        f"⬤ 𖦹 {user.first_name} - ᴄᴜᴛɪᴇ, ꜱᴀꜱꜱʏ, ᴀ ʟɪᴛᴛʟᴇ ᴡɪʟᴅ ᴀɴᴅ ɢᴀᴍᴇ ᴘᴀʀᴛɴᴇʀ 🤍\n\n"
+        "⬤ ᴊᴜꜱᴛ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴀɴᴅ ᴇɴᴊᴏʏ ᴛʜᴇ ᴄʜᴀᴛꜱ ᴀɴᴅ ɢᴀᴍᴇꜱ ᴡɪᴛʜ ᴍᴇ ᴛʜᴀᴛ ᴍᴀᴋᴇꜱ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴡɪʟʟ ʙᴇ ᴍᴏꜱᴛ ᴀᴄᴛɪᴠᴇ!\n\n"
+        "☑ Choose an option below:"
     )
 
-    
-keyboard = [
-    [InlineKeyboardButton("💬 Talk to 𝐀𝐤e𝐧o", callback_data="talk")],
-    [
-        InlineKeyboardButton("🧸 Friends", url="https://t.me/mich_family_group"),
-        InlineKeyboardButton("🎮 Games", callback_data="games")
-    ],
-    [InlineKeyboardButton("👻 Meet me here", url="https://t.me/mich_family_group")],
-    [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/?startgroup=true")],
-    [InlineKeyboardButton("🔑 Owner Panel", url="https://t.me/INTROVERT_HU_YRR")]  # 🔥 CLICKABLE OWNER BUTTON 
-]
-
+    keyboard = [
+        [InlineKeyboardButton("💬 Talk to 𝐀𝐤e𝐧o", callback_data="talk")],
+        [
+            InlineKeyboardButton("🧸 Friends", url="https://t.me/mich_family_group"),
+            InlineKeyboardButton("🎮 Games", callback_data="games")
+        ],
+        [InlineKeyboardButton("👻 Meet me here", url="https://t.me/mich_family_group")],
+        [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/?startgroup=true")],
+        [InlineKeyboardButton("🔑 Owner Panel", url="https://t.me/YourUsername")]
+    ]
 
     await update.message.reply_photo(
         photo=BOT_IMAGE_URL,
@@ -35,6 +32,7 @@ keyboard = [
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="Markdown"
     )
+
 
 # Callback query handler
 async def button_handler(update: Update, context: CallbackContext):
