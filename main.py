@@ -39,46 +39,40 @@ from commands.kill import kill
 from commands.revive import revive
 from commands.open_economy import open_economy
 from commands.close_economy import close_economy
-from commands.punch import punch  # ✅ Import punch
+from commands.punch import punch
 
 # Fun commands
 from commands.hug import hug
 from commands.couple import couple
 
+
 # -------------------- TRACK GROUP USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Track users in groups, but do NOT block commands"""
+    """Track users in groups without blocking commands."""
     if update.effective_chat.type in ["group", "supergroup"]:
         user = update.effective_user
         add_group_user(update.effective_chat.id, user.id, user.first_name)
 
-# -------------------- BALANCE COMMAND --------------------
+
 # -------------------- BALANCE COMMAND --------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    /balance command
-    - If replied to someone: show their balance
-    - If not replied: show own balance
-    """
-    # Decide whose balance to show
     if update.message.reply_to_message:
-        target_user = update.message.reply_to_message.from_user
-        user_id = target_user.id
-        name = target_user.first_name
+        target = update.message.reply_to_message.from_user
+        user_id = target.id
+        name = target.first_name
     else:
         user_id = update.effective_user.id
         name = update.effective_user.first_name
 
-    # Get user data from your DB
     user = get_user(user_id)
 
-    # Global rank calculation
+    # Global rank
     rank_pipeline = [
         {"$sort": {"balance": -1}},
         {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
     ]
     rank_data = list(users.aggregate(rank_pipeline))
-    if rank_data and rank_data[0]["users"]:
+    if rank_data:
         try:
             rank = rank_data[0]["users"].index(user_id) + 1
         except ValueError:
@@ -109,23 +103,26 @@ async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
+
 # -------------------- ERROR HANDLER --------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Error: {context.error}")
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text("❌ Something went wrong!")
 
+
 # -------------------- MAIN --------------------
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_error_handler(error_handler)
 
-    # Track group users (only non-command messages)
-    app.add_handler(MessageHandler(~filters.COMMAND, track_users))
+    # Track users (only text, not commands)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
 
     # Main commands
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
+
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("work", work))
     app.add_handler(CommandHandler("economy", economy_guide))
@@ -153,8 +150,9 @@ def main():
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
 
-    print("🚀 Bot Started...")
+    print("🚀 Bot Started Successfully!")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
