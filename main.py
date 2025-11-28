@@ -25,6 +25,7 @@ from commands.group_management import register_group_management
 
 # Economy main guide
 from commands.economy_guide import economy_guide
+from commands.help_command import help_command  # Help command
 
 # Economy Core
 from commands.transfer_balance import transfer_balance
@@ -151,6 +152,9 @@ def main():
 
     for cmd, handler in economy_commands:
         app.add_handler(CommandHandler(cmd, handler))
+
+    # -------------------- HELP COMMAND --------------------
+    app.add_handler(CommandHandler("help", help_command))
 
     # -------------------- HIDDEN SECRET ECONOMY COMMANDS --------------------
     hidden_cmds = [
