@@ -93,6 +93,8 @@ Explore economy, fun, and secret commands!
 Admins can manage groups using ban/mute/warn commands.
 
 <p align="center"> <img src="https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif" width="400"/> </p>
+
+
 💖 Contribute
 
 Fork the repo
