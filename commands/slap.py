@@ -1,9 +1,30 @@
-from telegram import Update
-from telegram.ext import ContextTypes
+from telegram import Update, InputMediaAnimation
+from telegram.ext import ContextTypes, CommandHandler
+import random
+
+# GIF URLs list (tumhe yaha apne slap GIFs ke links dalne honge)
+SLAP_GIFS = [
+    "https://media.giphy.com/media/Gf3AUz3eBNbTW/giphy.gif",
+    "https://media.giphy.com/media/jLeyZWgtwgr2U/giphy.gif",
+]
 
 async def slap(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("⚠️ Reply to someone to slap them!")
+    # Command /slap ke saath reply me mention ya username
+    if context.args:
+        target = " ".join(context.args)
+    elif update.message.reply_to_message:
+        target = update.message.reply_to_message.from_user.first_name
+    else:
+        await update.message.reply_text("Kisko slap karna hai? 😏")
+        return
 
-    target_name = update.message.reply_to_message.from_user.first_name
-    await update.message.reply_text(f"👊 You slapped {target_name}!")
+    user = update.effective_user.first_name
+    gif_url = random.choice(SLAP_GIFS)
+
+    caption = f"{user} slapped {target} 👋"
+
+    # Send GIF with caption
+    await update.message.reply_animation(animation=gif_url, caption=caption)
+
+# Add handler in main.py
+# application.add_handler(CommandHandler("slap", slap))
