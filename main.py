@@ -7,7 +7,8 @@ from telegram.ext import (
     CallbackQueryHandler,
     ContextTypes,
     MessageHandler,
-    filters
+    filters,
+    ChatMemberHandler
 )
 
 # Helpers
@@ -16,10 +17,11 @@ from helpers import get_user, users, add_group_user
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = int(os.getenv("OWNER_ID", 0))  # Owner ID for restricted commands
+LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", 0))  # Group ID for logging
 
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
-from commands.log_handler import log_start, log_added_to_group
+from commands.log_handler import log_start
 
 # Economy
 from commands.economy_guide import economy_guide
@@ -114,6 +116,18 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text("❌ Something went wrong!")
 
+# -------------------- BOT ADDED TO GROUP LOG --------------------
+async def my_chat_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_status = update.my_chat_member.new_chat_member.status
+    if new_status in ["member", "administrator"]:
+        # Bot added to a group
+        chat = update.effective_chat
+        if chat and LOG_GROUP_ID:
+            await context.bot.send_message(
+                chat_id=LOG_GROUP_ID,
+                text=f"🤖 Bot added to group: {chat.title} ({chat.id})"
+            )
+
 # -------------------- MAIN --------------------
 def main():
     app = Application.builder().token(TOKEN).build()
@@ -122,9 +136,6 @@ def main():
     # Track users
     app.add_handler(MessageHandler(~filters.COMMAND, track_users))
 
-    # Log handlers
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, log_added_to_group))
-    
     # Start command with logging inside
     async def start_wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await log_start(update, context)  # log first
@@ -162,6 +173,9 @@ def main():
 
     # Owner-only test command
     app.add_handler(CommandHandler("test", test))
+
+    # Bot added to group log
+    app.add_handler(ChatMemberHandler(my_chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
 
     print("🚀 Bot Started... Polling mode active")
     app.run_polling()
