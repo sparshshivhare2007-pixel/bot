@@ -19,7 +19,9 @@ OWNER_ID = int(os.getenv("OWNER_ID", "0"))  # ADD THIS IN YOUR .env
 
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
-from commands.sticker_id_command import register_sticker_id_handlers  # Sticker ID command
+
+# Sticker ID command
+from commands.sticker_id_command import register_sticker_id_handlers
 
 # Economy
 from commands.economy_guide import economy_guide
@@ -154,7 +156,7 @@ def main():
     app.add_handler(CommandHandler("couple", couple))
 
     # -------------------- STICKER_ID COMMAND --------------------
-    register_sticker_id_handlers(app)
+    register_sticker_id_handlers(app)  # v20+ compatible
 
     print("🚀 Bot Started Successfully!")
     app.run_polling()
