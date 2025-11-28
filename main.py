@@ -17,9 +17,9 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))  # ADD THIS IN YOUR .env
 
-
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
+from commands.sticker_id_command import register_sticker_id_handlers  # Sticker ID command
 
 # Economy
 from commands.economy_guide import economy_guide
@@ -47,26 +47,19 @@ from commands.punch import punch
 from commands.hug import hug
 from commands.couple import couple
 
-
 # -------------------- AUTO RESTART TEST COMMAND --------------------
 async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-
     if user.id != OWNER_ID:
         return await update.message.reply_text("⛔ You are not authorized to use this command.")
-
     await update.message.reply_text("🔄 Restarting bot...")
-
     os._exit(1)  # Hosting will auto-restart the bot
-
 
 # -------------------- TRACK GROUP USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Track only names, not log anything."""
     if update.effective_chat.type in ["group", "supergroup"]:
         user = update.effective_user
         add_group_user(update.effective_chat.id, user.id, user.first_name)
-
 
 # -------------------- BALANCE COMMAND --------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -79,8 +72,6 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         name = update.effective_user.first_name
 
     user = get_user(user_id)
-
-    # Global rank
     rank_pipeline = [
         {"$sort": {"balance": -1}},
         {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
@@ -95,7 +86,6 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rank = 1
 
     status = "☠️ Dead" if user.get("killed") else "Alive"
-
     await update.message.reply_text(
         f"👤 𝐍𝐚𝐦𝐞: {name}\n"
         f"💰 𝐁𝐚𝐥𝐚𝐧𝐜𝐞: ${user['balance']}\n"
@@ -104,26 +94,21 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
 
-
 # -------------------- WORK COMMAND --------------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     reward = 200
-
     users.update_one(
         {"user_id": user["user_id"]},
         {"$inc": {"balance": reward}}
     )
-
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
-
 
 # -------------------- ERROR HANDLER --------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Error: {context.error}")
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text("❌ Something went wrong!")
-
 
 # -------------------- MAIN --------------------
 def main():
@@ -167,6 +152,9 @@ def main():
     app.add_handler(CommandHandler("punch", punch))
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
+
+    # -------------------- STICKER_ID COMMAND --------------------
+    register_sticker_id_handlers(app)
 
     print("🚀 Bot Started Successfully!")
     app.run_polling()
