@@ -1,17 +1,42 @@
-# start_command.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext
+from telegram.ext import ContextTypes
 
-# 🚨 IMPORTANT: Replace this URL with the direct link to your bot's welcome image
+# IMAGE FOR GROUP START
 BOT_IMAGE_URL = "https://files.catbox.moe/z1skp4.jpg"
+STICKER_ID = "`CAACAgQAAxkBAAEPiQppKcATJi3RB9_QwVlyK2EjxisdogACUhUAAnRkqVPXj4u7QSZIGR4E`"  # apna DM sticker id
 
-# /start command
-async def start_command(update: Update, context: CallbackContext):
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    chat = update.effective_chat
 
+    # CLICKABLE NAME
+    mention = f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
+
+    # ---------- DM START ----------
+    if chat.type == "private":
+        # DM style
+        text = (
+            f"Welcome Baby 🩵\n"
+            f"{mention} <i>🌹</i>\n"
+            f".. 😅"
+        )
+
+        # send sticker first
+        await update.message.reply_sticker(STICKER_ID)
+
+        # send DM message
+        await update.message.reply_text(
+            text,
+            parse_mode="HTML"
+        )
+        return
+
+    # ---------- GROUP START ----------
+    # Group style (image + buttons)
     text = (
-        f"👋 Hey, →🪬{user.first_name}🪬🤍\n"
-        "💞 You're talking to *𝐀𝐤e𝐧o*, a sassy cutie bot 👻💕\n\n"
+        f"👋 Hey, →🪬{mention}🪬🤍\n"
+        "💞 You're talking to <b>𝐀𝐤e𝐧o</b>, a sassy cutie bot 👻💕\n\n"
         "☑ Choose an option below:"
     )
 
@@ -29,24 +54,24 @@ async def start_command(update: Update, context: CallbackContext):
         photo=BOT_IMAGE_URL,
         caption=text,
         reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 
+
 # Callback query handler
-async def button_handler(update: Update, context: CallbackContext):
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    await query.answer()
 
     if query.data == "talk":
-        await query.answer()
         await query.message.reply_text("Let's chat! 💬")
 
     elif query.data == "games":
-        await query.answer()
         await query.message.reply_text(
-            "💰 *Akeno Economy System Guide*\n\n"
+            "💰 <b>Akeno Economy System Guide</b>\n\n"
             "💬 How it works:\n"
             "Manage your virtual money and items in the group! Use commands below to earn, gift, buy, or interact with others.\n\n"
-            "🔨 *Economy Commands:*\n"
+            "🔨 <b>Economy Commands:</b>\n"
             "🔹 /close — Close economy commands working in the group\n"
             "🔹 /open — Open economy commands working in the group\n"
             "🔹 /bal — Check your/friend's balance\n"
@@ -58,10 +83,10 @@ async def button_handler(update: Update, context: CallbackContext):
             "🔹 /revive (Reply or without reply) — Revive you or your friend\n"
             "🔹 /protect 1d|2d — Buy protection\n"
             "🔹 /transfer amount — Owner only: Add/remove money\n\n"
-            "🎁 *Item & Gifting*\n"
+            "🎁 <b>Item & Gifting</b>\n"
             "• Earn money by killing others\n"
             "• Gift money with 10% fee\n"
             "• Buy protection to avoid robbery\n"
             "• Top rankings for richest and killers",
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
