@@ -15,6 +15,8 @@ from helpers import get_user, users, add_group_user
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID", "0"))  # ADD THIS IN YOUR .env
+
 
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
@@ -46,9 +48,21 @@ from commands.hug import hug
 from commands.couple import couple
 
 
+# -------------------- AUTO RESTART TEST COMMAND --------------------
+async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+
+    if user.id != OWNER_ID:
+        return await update.message.reply_text("⛔ You are not authorized to use this command.")
+
+    await update.message.reply_text("🔄 Restarting bot...")
+
+    os._exit(1)  # Hosting will auto-restart the bot
+
+
 # -------------------- TRACK GROUP USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Track users in groups without blocking commands."""
+    """Track only names, not log anything."""
     if update.effective_chat.type in ["group", "supergroup"]:
         user = update.effective_user
         add_group_user(update.effective_chat.id, user.id, user.first_name)
@@ -116,13 +130,17 @@ def main():
     app = Application.builder().token(TOKEN).build()
     app.add_error_handler(error_handler)
 
-    # Track users (only text, not commands)
+    # Track users
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
 
-    # Main commands
+    # Start
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
 
+    # Restart command
+    app.add_handler(CommandHandler("test", test_restart))
+
+    # Economy commands
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("work", work))
     app.add_handler(CommandHandler("economy", economy_guide))
