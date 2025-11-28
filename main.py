@@ -45,8 +45,6 @@ from commands.hug import hug
 from commands.couple import couple
 
 # CHATBOT
-from chatbot.chatbot_handler import chatbot_handler
-
 
 # -------------------- TRACK GROUP USERS --------------------
 async def track_users(update, context):
@@ -143,8 +141,7 @@ def main():
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
 
-    # CHATBOT (last)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot_handler))
+    # CHATBOT (last
 
     print("🚀 Bot Started...")
     app.run_polling()
