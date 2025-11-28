@@ -9,5 +9,5 @@ async def bank(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"🏦 *Bank Account*\n"
         f"💳 Balance in bank: **${bank_amount}**",
-        parse_mode="Markdown"
+        parse_mode="none"
     )
