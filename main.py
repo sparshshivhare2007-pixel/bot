@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -10,20 +10,15 @@ from telegram.ext import (
     filters,
     ChatMemberHandler
 )
+from pymongo import MongoClient
 
 # Helpers
 from helpers import get_user, users, add_group_user
 
-load_dotenv()
-TOKEN = os.getenv("BOT_TOKEN")
-OWNER_ID = int(os.getenv("OWNER_ID", 0))  # Owner ID for restricted commands
-LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", 0))  # Group ID for logging
-
-# -------------------- IMPORT COMMANDS --------------------
+# Commands
 from commands.start_command import start_command, button_handler
-from commands.log_handler import log_start
+from commands.log_handler import log_start  # Keep existing start log
 
-# Economy
 from commands.economy_guide import economy_guide
 from commands.transfer_balance import transfer_balance
 from commands.claim import claim
@@ -44,23 +39,86 @@ from commands.revive import revive
 from commands.open_economy import open_economy
 from commands.close_economy import close_economy
 from commands.punch import punch
-
-# Fun commands
 from commands.hug import hug
 from commands.couple import couple
 
-# -------------------- TRACK GROUP USERS --------------------
+# Load environment
+load_dotenv()
+TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID", 0))  # Owner ID
+MONGO_URI = os.getenv("MONGO_URI")
+
+# ------------------- MongoDB Log System -------------------
+client = MongoClient(MONGO_URI)
+db = client["economy_bot"]
+settings = db["settings"]
+
+def get_log_chat_id():
+    log_setting = settings.find_one({"_id": "log_chat"})
+    return log_setting.get("chat_id") if log_setting else None
+
+def is_owner(user_id):
+    return user_id == OWNER_ID
+
+async def send_log_message(bot: Bot, text: str, parse_mode='HTML'):
+    log_chat_id = get_log_chat_id()
+    target_id = log_chat_id if log_chat_id else OWNER_ID
+    if target_id:
+        try:
+            await bot.send_message(chat_id=target_id, text=text, parse_mode=parse_mode)
+        except Exception as e:
+            print(f"Error sending log message to {target_id}: {e}")
+    else:
+        print("Warning: Log chat ID and OWNER_ID are not set. Cannot send logs.")
+
+async def log_bot_startup(bot: Bot, total_users: int = 0):
+    try:
+        owner_info = await bot.get_chat(OWNER_ID)
+        owner_name = owner_info.first_name
+        owner_username = f"@{owner_info.username}" if owner_info.username else "@No Username"
+        message = (
+            f"𝐊𝐚𝐦𝐚𝐥 ʜᴀs sᴛᴀʀᴛᴇᴅ ʙᴏᴛ.\n\n"
+            f"ɴᴀᴍᴇ : {owner_name}\n"
+            f"ᴜsᴇʀɴᴀᴍᴇ : {owner_username}\n"
+            f"ɪᴅ : <code>{OWNER_ID}</code>\n\n"
+            f"ᴛᴏᴛᴀʟ ᴜsᴇʀs : {total_users}"
+        )
+        await send_log_message(bot, message)
+    except Exception as e:
+        print(f"Error logging bot startup: {e}")
+
+# ------------------- Owner Log Commands -------------------
+async def setlog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if not is_owner(user_id):
+        return await update.message.reply_text("❌ This command is owner only!")
+    chat_id = update.effective_chat.id
+    settings.update_one({"_id": "log_chat"}, {"$set": {"chat_id": chat_id}}, upsert=True)
+    await update.message.reply_text(f"✅ Log chat set successfully! (Chat ID: <code>{chat_id}</code>)", parse_mode='HTML')
+
+async def dellog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if not is_owner(user_id):
+        return await update.message.reply_text("❌ This command is owner only!")
+    settings.delete_one({"_id": "log_chat"})
+    await update.message.reply_text("🗑️ Log chat deleted. Logs will now go to owner's DM.", parse_mode='HTML')
+
+async def testlog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_owner(update.effective_user.id):
+        return await update.message.reply_text("❌ Only owner can test logs!")
+    await send_log_message(context.bot, "✅ Test log message from bot!")
+
+# ------------------- Track Group Users -------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat and update.effective_chat.type in ["group", "supergroup"]:
         user = update.effective_user
         if user:
             add_group_user(update.effective_chat.id, user.id, user.first_name)
 
-# -------------------- BALANCE COMMAND --------------------
+# ------------------- Balance Command -------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
-
     if update.message.reply_to_message:
         target_user = update.message.reply_to_message.from_user
         user_id = target_user.id
@@ -70,11 +128,7 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         name = update.effective_user.first_name
 
     user = get_user(user_id)
-
-    rank_pipeline = [
-        {"$sort": {"balance": -1}},
-        {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
-    ]
+    rank_pipeline = [{"$sort": {"balance": -1}}, {"$group": {"_id": None, "users": {"$push": "$user_id"}}}]
     rank_data = list(users.aggregate(rank_pipeline))
     if rank_data and rank_data[0]["users"]:
         try:
@@ -83,7 +137,6 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
             rank = len(rank_data[0]["users"]) + 1
     else:
         rank = 1
-
     status = "☠️ Dead" if user.get("killed") else "Alive"
 
     await update.message.reply_text(
@@ -94,7 +147,7 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
 
-# -------------------- WORK COMMAND --------------------
+# ------------------- Work Command -------------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
@@ -103,32 +156,31 @@ async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": reward}})
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
-# -------------------- TEST COMMAND (OWNER ONLY) --------------------
+# ------------------- Test Command -------------------
 async def test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
         await update.message.reply_text("❌ You are not authorized to use this command!")
         return
     await update.message.reply_text("✅ Bot is working! Owner confirmed.")
 
-# -------------------- ERROR HANDLER --------------------
+# ------------------- Error Handler -------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Error: {context.error}")
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text("❌ Something went wrong!")
 
-# -------------------- BOT ADDED TO GROUP LOG --------------------
+# ------------------- Bot Added/Removed to Group -------------------
 async def my_chat_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_status = update.my_chat_member.new_chat_member.status
+    chat = update.effective_chat
     if new_status in ["member", "administrator"]:
-        # Bot added to a group
-        chat = update.effective_chat
-        if chat and LOG_GROUP_ID:
-            await context.bot.send_message(
-                chat_id=LOG_GROUP_ID,
-                text=f"🤖 Bot added to group: {chat.title} ({chat.id})"
-            )
+        # Bot added
+        await send_log_message(context.bot, f"🤖 Bot added to group: {chat.title} ({chat.id})")
+    elif new_status == "left":
+        # Bot removed
+        await send_log_message(context.bot, f"👋 Bot removed from group: {chat.title} ({chat.id})")
 
-# -------------------- MAIN --------------------
+# ------------------- Main -------------------
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_error_handler(error_handler)
@@ -136,11 +188,16 @@ def main():
     # Track users
     app.add_handler(MessageHandler(~filters.COMMAND, track_users))
 
-    # Start command with logging inside
+    # Start command with log
     async def start_wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await log_start(update, context)  # log first
-        await start_command(update, context)  # then normal start
+        await log_start(update, context)  # existing start log
+        await start_command(update, context)
     app.add_handler(CommandHandler("start", start_wrapper))
+
+    # Owner log commands
+    app.add_handler(CommandHandler("setlog", setlog))
+    app.add_handler(CommandHandler("dellog", dellog))
+    app.add_handler(CommandHandler("testlog", testlog))
 
     # Main commands
     app.add_handler(CallbackQueryHandler(button_handler))
@@ -165,18 +222,15 @@ def main():
     app.add_handler(CommandHandler("revive", revive))
     app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_economy))
-
-    # Fun commands
     app.add_handler(CommandHandler("punch", punch))
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
-
-    # Owner-only test command
     app.add_handler(CommandHandler("test", test))
 
-    # Bot added to group log
+    # Bot added/removed logs
     app.add_handler(ChatMemberHandler(my_chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
 
+    # Start bot
     print("🚀 Bot Started... Polling mode active")
     app.run_polling()
 
