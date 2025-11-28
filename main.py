@@ -15,6 +15,7 @@ from helpers import get_user, users, add_group_user
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID", 0))  # Owner ID for restricted commands
 
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
@@ -100,6 +101,13 @@ async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": reward}})
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
+# -------------------- TEST COMMAND (OWNER ONLY) --------------------
+async def test(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized to use this command!")
+        return
+    await update.message.reply_text("✅ Bot is working! Owner confirmed.")
+
 # -------------------- ERROR HANDLER --------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Error: {context.error}")
@@ -152,9 +160,7 @@ def main():
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
 
-    # Test command to ensure bot responds
-    async def test(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text("✅ Bot is working!")
+    # Owner-only test command
     app.add_handler(CommandHandler("test", test))
 
     print("🚀 Bot Started... Polling mode active")
