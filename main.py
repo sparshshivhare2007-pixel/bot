@@ -21,10 +21,12 @@ OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
-from commands.group_management import register_group_management  # Group management commands
+from commands.group_management import register_group_management  
 
-# Economy commands
+# Economy main guide
 from commands.economy_guide import economy_guide
+
+# Economy Core
 from commands.transfer_balance import transfer_balance
 from commands.claim import claim
 from commands.own import own
@@ -48,6 +50,21 @@ from commands.punch import punch
 # Fun commands
 from commands.hug import hug
 from commands.couple import couple
+
+# -------------------- HIDDEN SECRET ECONOMY COMMANDS --------------------
+# (Tum inka file banake commands/ folder me daal dena)
+from commands.mine import mine
+from commands.farm import farm
+from commands.crime import crime
+from commands.heal import heal
+from commands.shop import shop
+from commands.buy import buy
+from commands.sell import sell
+from commands.profile import profile
+from commands.bank import bank
+from commands.deposit import deposit
+from commands.withdraw import withdraw
+
 
 # -------------------- AUTO RESTART TEST COMMAND --------------------
 async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -116,30 +133,44 @@ def main():
     # Track users
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
 
-    # Start command & buttons
+    # Start
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    # Restart command
+    # Restart
     app.add_handler(CommandHandler("test", test_restart))
 
     # -------------------- ECONOMY COMMANDS --------------------
     economy_commands = [
-        ("balance", balance), ("work", work), ("economy", economy_guide), ("transfer", transfer_balance),
-        ("claim", claim), ("own", own), ("crush", crush), ("love", love), ("slap", slap),
+        ("balance", balance), ("work", work), ("economy", economy_guide),
+        ("transfer", transfer_balance), ("claim", claim), ("own", own),
+        ("crush", crush), ("love", love), ("slap", slap),
         ("items", items), ("item", item), ("give", give), ("daily", daily),
-        ("rob", rob), ("protect", protect), ("toprich", toprich), ("topkill", topkill),
-        ("kill", kill), ("revive", revive), ("open", open_economy), ("close", close_economy)
+        ("rob", rob), ("protect", protect), ("toprich", toprich),
+        ("topkill", topkill), ("kill", kill), ("revive", revive),
+        ("open", open_economy), ("close", close_economy)
     ]
+
     for cmd, handler in economy_commands:
         app.add_handler(CommandHandler(cmd, handler))
 
-    # -------------------- FUN COMMANDS --------------------
+    # -------------------- HIDDEN SECRET ECONOMY COMMANDS --------------------
+    hidden_cmds = [
+        ("mine", mine), ("farm", farm), ("crime", crime), ("heal", heal),
+        ("shop", shop), ("buy", buy), ("sell", sell),
+        ("profile", profile), ("bank", bank), ("deposit", deposit),
+        ("withdraw", withdraw)
+    ]
+
+    for cmd, handler in hidden_cmds:
+        app.add_handler(CommandHandler(cmd, handler))
+
+    # -------------------- FUN --------------------
     fun_commands = [("punch", punch), ("hug", hug), ("couple", couple)]
     for cmd, handler in fun_commands:
         app.add_handler(CommandHandler(cmd, handler))
 
-    # -------------------- GROUP MANAGEMENT --------------------
+    # Group Manage
     register_group_management(app)
 
     print("🚀 Bot Started Successfully!")
