@@ -1,3 +1,4 @@
+# main.py
 import os
 from dotenv import load_dotenv
 from telegram import Update
@@ -13,14 +14,16 @@ from telegram.ext import (
 # Helpers
 from helpers import get_user, users, add_group_user
 
+# Load environment
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))  # ADD THIS IN YOUR .env
+OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
+from commands.group_management import register_group_management  # Group management commands
 
-# Economy
+# Economy commands
 from commands.economy_guide import economy_guide
 from commands.transfer_balance import transfer_balance
 from commands.claim import claim
@@ -52,7 +55,7 @@ async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id != OWNER_ID:
         return await update.message.reply_text("⛔ You are not authorized to use this command.")
     await update.message.reply_text("🔄 Restarting bot...")
-    os._exit(1)  # Hosting will auto-restart the bot
+    os._exit(1)
 
 # -------------------- TRACK GROUP USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -76,13 +79,12 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
     ]
     rank_data = list(users.aggregate(rank_pipeline))
+    rank = 1
     if rank_data:
         try:
             rank = rank_data[0]["users"].index(user_id) + 1
         except ValueError:
             rank = len(rank_data[0]["users"]) + 1
-    else:
-        rank = 1
 
     status = "☠️ Dead" if user.get("killed") else "Alive"
     await update.message.reply_text(
@@ -97,10 +99,7 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     reward = 200
-    users.update_one(
-        {"user_id": user["user_id"]},
-        {"$inc": {"balance": reward}}
-    )
+    users.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": reward}})
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
 # -------------------- ERROR HANDLER --------------------
@@ -117,40 +116,31 @@ def main():
     # Track users
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
 
-    # Start
+    # Start command & buttons
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
 
     # Restart command
     app.add_handler(CommandHandler("test", test_restart))
 
-    # Economy commands
-    app.add_handler(CommandHandler("balance", balance))
-    app.add_handler(CommandHandler("work", work))
-    app.add_handler(CommandHandler("economy", economy_guide))
-    app.add_handler(CommandHandler("transfer", transfer_balance))
-    app.add_handler(CommandHandler("claim", claim))
-    app.add_handler(CommandHandler("own", own))
-    app.add_handler(CommandHandler("crush", crush))
-    app.add_handler(CommandHandler("love", love))
-    app.add_handler(CommandHandler("slap", slap))
-    app.add_handler(CommandHandler("items", items))
-    app.add_handler(CommandHandler("item", item))
-    app.add_handler(CommandHandler("give", give))
-    app.add_handler(CommandHandler("daily", daily))
-    app.add_handler(CommandHandler("rob", rob))
-    app.add_handler(CommandHandler("protect", protect))
-    app.add_handler(CommandHandler("toprich", toprich))
-    app.add_handler(CommandHandler("topkill", topkill))
-    app.add_handler(CommandHandler("kill", kill))
-    app.add_handler(CommandHandler("revive", revive))
-    app.add_handler(CommandHandler("open", open_economy))
-    app.add_handler(CommandHandler("close", close_economy))
+    # -------------------- ECONOMY COMMANDS --------------------
+    economy_commands = [
+        ("balance", balance), ("work", work), ("economy", economy_guide), ("transfer", transfer_balance),
+        ("claim", claim), ("own", own), ("crush", crush), ("love", love), ("slap", slap),
+        ("items", items), ("item", item), ("give", give), ("daily", daily),
+        ("rob", rob), ("protect", protect), ("toprich", toprich), ("topkill", topkill),
+        ("kill", kill), ("revive", revive), ("open", open_economy), ("close", close_economy)
+    ]
+    for cmd, handler in economy_commands:
+        app.add_handler(CommandHandler(cmd, handler))
 
-    # Fun commands
-    app.add_handler(CommandHandler("punch", punch))
-    app.add_handler(CommandHandler("hug", hug))
-    app.add_handler(CommandHandler("couple", couple))
+    # -------------------- FUN COMMANDS --------------------
+    fun_commands = [("punch", punch), ("hug", hug), ("couple", couple)]
+    for cmd, handler in fun_commands:
+        app.add_handler(CommandHandler(cmd, handler))
+
+    # -------------------- GROUP MANAGEMENT --------------------
+    register_group_management(app)
 
     print("🚀 Bot Started Successfully!")
     app.run_polling()
