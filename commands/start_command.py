@@ -1,8 +1,8 @@
 # commands/start_command.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes  # Use ContextTypes for async PTB v20+
+from telegram.ext import ContextTypes  # PTB v20+ async
 
-# 🚨 IMPORTANT: Replace this URL with the direct link to your bot's welcome image
+# 🚨 IMPORTANT: Replace this URL with your bot's welcome image
 BOT_IMAGE_URL = "https://files.catbox.moe/z1skp4.jpg"
 
 # /start command
@@ -30,7 +30,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo=BOT_IMAGE_URL,
             caption=text,
             reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="MarkdownV2"  # safer for special characters and emojis
+            parse_mode="MarkdownV2"  # Safe for emojis
         )
     except Exception as e:
         print(f"❌ Error in start_command: {e}")
@@ -41,7 +41,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not query:
         return
 
-    await query.answer()  # Always answer the callback first
+    await query.answer()  # Always answer callback first
 
     if query.data == "talk":
         await query.message.reply_text("Let's chat! 💬")
