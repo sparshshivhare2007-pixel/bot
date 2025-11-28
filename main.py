@@ -119,6 +119,7 @@ def main():
     app.add_handler(CommandHandler("transfer", transfer_balance))
 
     # Fun commands
+    application.add_handler(CommandHandler("punch", punch))
     app.add_handler(CommandHandler("claim", claim))
     app.add_handler(CommandHandler("own", own))
     app.add_handler(CommandHandler("crush", crush))
