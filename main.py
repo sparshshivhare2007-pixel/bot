@@ -18,7 +18,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
-from commands.log_handler import log_user_start, log_bot_added   # ✅ Log system added
+from commands.log_handler import log_start, log_added_to_group  # ✅ Correct function names
 
 # Economy
 from commands.economy_guide import economy_guide
@@ -118,8 +118,8 @@ def main():
     app.add_handler(MessageHandler(~filters.COMMAND, track_users))
 
     # ---------- LOG HANDLERS ADDED ----------
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, log_bot_added))  # Bot added log
-    app.add_handler(CommandHandler("start", log_user_start))  # Start log
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, log_added_to_group))  # Bot added log
+    app.add_handler(CommandHandler("start", log_start))  # Start log
     # -----------------------------------------
 
     # Main commands
