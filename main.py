@@ -5,8 +5,8 @@ from telegram.ext import (
     Application,
     CommandHandler,
     CallbackQueryHandler,
-    MessageHandler,
     ContextTypes,
+    MessageHandler,
     filters
 )
 
@@ -39,29 +39,26 @@ from commands.kill import kill
 from commands.revive import revive
 from commands.open_economy import open_economy
 from commands.close_economy import close_economy
+from commands.punch import punch  # ✅ Import punch command
 
 # Fun commands
 from commands.hug import hug
 from commands.couple import couple
 
-# CHATBOT
-
 # -------------------- TRACK GROUP USERS --------------------
-async def track_users(update, context):
+async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type in ["group", "supergroup"]:
         user = update.effective_user
         add_group_user(update.effective_chat.id, user.id, user.first_name)
 
-
 # -------------------- BALANCE COMMAND --------------------
-async def balance(update, context):
+async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
 
     rank_pipeline = [
         {"$sort": {"balance": -1}},
         {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
     ]
-
     rank_data = list(users.aggregate(rank_pipeline))
 
     if rank_data and rank_data[0]["users"]:
@@ -83,9 +80,8 @@ async def balance(update, context):
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
 
-
 # -------------------- WORK COMMAND --------------------
-async def work(update, context):
+async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     reward = 200
 
@@ -96,30 +92,27 @@ async def work(update, context):
 
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
-
 # -------------------- ERROR HANDLER --------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Error: {context.error}")
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text("❌ Something went wrong!")
 
-
 # -------------------- MAIN --------------------
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_error_handler(error_handler)
 
+    # Track group users
+    app.add_handler(MessageHandler(filters.ALL, track_users))
+
     # Main commands
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
-
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("work", work))
     app.add_handler(CommandHandler("economy", economy_guide))
     app.add_handler(CommandHandler("transfer", transfer_balance))
-
-    # Fun commands
-    application.add_handler(CommandHandler("punch", punch))
     app.add_handler(CommandHandler("claim", claim))
     app.add_handler(CommandHandler("own", own))
     app.add_handler(CommandHandler("crush", crush))
@@ -138,15 +131,13 @@ def main():
     app.add_handler(CommandHandler("open", open_economy))
     app.add_handler(CommandHandler("close", close_economy))
 
-    # Extra fun
+    # Fun commands
+    app.add_handler(CommandHandler("punch", punch))
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
 
-    # CHATBOT (last
-
     print("🚀 Bot Started...")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
