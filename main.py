@@ -52,7 +52,6 @@ from commands.hug import hug
 from commands.couple import couple
 
 # -------------------- HIDDEN SECRET ECONOMY COMMANDS --------------------
-# (Tum inka file banake commands/ folder me daal dena)
 from commands.mine import mine
 from commands.farm import farm
 from commands.crime import crime
@@ -64,7 +63,6 @@ from commands.profile import profile
 from commands.bank import bank
 from commands.deposit import deposit
 from commands.withdraw import withdraw
-
 
 # -------------------- AUTO RESTART TEST COMMAND --------------------
 async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -109,7 +107,7 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💰 𝐁𝐚𝐥𝐚𝐧𝐜𝐞: ${user['balance']}\n"
         f"🏆 𝐆𝐥𝐨𝐛𝐚𝐥 𝐑𝐚𝐧𝐤: #{rank}\n"
         f"❤️ 𝐒𝐭𝐚𝐭𝐮ѕ: {status}\n"
-        f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
+        f"⚔️ 𝐊𝐢𝐥𝐥s: {user['kills']}"
     )
 
 # -------------------- WORK COMMAND --------------------
