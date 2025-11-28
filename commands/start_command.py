@@ -10,9 +10,10 @@ async def start_command(update: Update, context: CallbackContext):
     user = update.effective_user
 
     text = (
-        f"👋 Hey, →🪬{user.first_name}🪬🤍\n"
-        "💞 You're talking to *𝐀𝐤e𝐧o*, a sassy cutie bot 👻💕\n\n"
-        "☑ Choose an option below:"
+    f"⬤ 𖦹 {user.first_name} - ᴄᴜᴛɪᴇ, ꜱᴀꜱꜱʏ, ᴀ ʟɪᴛᴛʟᴇ ᴡɪʟᴅ ᴀɴᴅ ɢᴀᴍᴇ ᴘᴀʀᴛɴᴇʀ 🤍\n\n"
+    "⬤ ᴊᴜꜱᴛ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴀɴᴅ ᴇɴᴊᴏʏ ᴛʜᴇ ᴄʜᴀᴛꜱ ᴀɴᴅ ɢᴀᴍᴇꜱ ᴡɪᴛʜ ᴍᴇ ᴛʜᴀᴛ ᴍᴀᴋᴇꜱ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴡɪʟʟ ʙᴇ ᴍᴏꜱᴛ ᴀᴄᴛɪᴠᴇ!\n\n"
+    "☑ Choose an option below:"
+        
     )
 
     keyboard = [
