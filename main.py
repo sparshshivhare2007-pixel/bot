@@ -53,10 +53,9 @@ async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         add_group_user(update.effective_chat.id, user.id, user.first_name)
 
 # -------------------- BALANCE COMMAND --------------------
-# -------------------- BALANCE COMMAND --------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    /balance command
+    /balance or /bal command
     - If replied to someone: show their balance
     - If not replied: show own balance
     """
@@ -96,7 +95,6 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
 
-
 # -------------------- WORK COMMAND --------------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
@@ -126,7 +124,7 @@ def main():
     # Main commands
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
-    app.add_handler(CommandHandler("balance", balance))
+    app.add_handler(CommandHandler(["balance", "bal"], balance))  # ✅ /bal alias
     app.add_handler(CommandHandler("work", work))
     app.add_handler(CommandHandler("economy", economy_guide))
     app.add_handler(CommandHandler("transfer", transfer_balance))
@@ -153,8 +151,8 @@ def main():
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
 
-    print("🚀 Bot Started...")
-    app.run_polling()
+    print("🚀 Bot Started... Polling mode active")
+    app.run_polling()  # ✅ Only polling, no webhook
 
 if __name__ == "__main__":
     main()
