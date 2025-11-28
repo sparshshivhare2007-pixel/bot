@@ -53,25 +53,40 @@ async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         add_group_user(update.effective_chat.id, user.id, user.first_name)
 
 # -------------------- BALANCE COMMAND --------------------
+# -------------------- BALANCE COMMAND --------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = get_user(update.effective_user.id)
+    """
+    /balance command
+    - If replied to someone: show their balance
+    - If not replied: show own balance
+    """
+    # Decide whose balance to show
+    if update.message.reply_to_message:
+        target_user = update.message.reply_to_message.from_user
+        user_id = target_user.id
+        name = target_user.first_name
+    else:
+        user_id = update.effective_user.id
+        name = update.effective_user.first_name
 
+    # Get user data from your DB
+    user = get_user(user_id)
+
+    # Global rank calculation
     rank_pipeline = [
         {"$sort": {"balance": -1}},
         {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
     ]
     rank_data = list(users.aggregate(rank_pipeline))
-
     if rank_data and rank_data[0]["users"]:
         try:
-            rank = rank_data[0]["users"].index(update.effective_user.id) + 1
+            rank = rank_data[0]["users"].index(user_id) + 1
         except ValueError:
             rank = len(rank_data[0]["users"]) + 1
     else:
         rank = 1
 
     status = "☠️ Dead" if user.get("killed") else "Alive"
-    name = update.effective_user.first_name
 
     await update.message.reply_text(
         f"👤 𝐍𝐚𝐦𝐞: {name}\n"
@@ -80,6 +95,7 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"❤️ 𝐒𝐭𝐚𝐭𝐮𝐬: {status}\n"
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
+
 
 # -------------------- WORK COMMAND --------------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
