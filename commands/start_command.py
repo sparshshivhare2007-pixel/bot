@@ -23,7 +23,7 @@ async def start_command(update: Update, context: CallbackContext):
         ],
         [InlineKeyboardButton("👻 Meet me here", url="https://t.me/mich_family_group")],
         [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/?startgroup=true")],
-        [InlineKeyboardButton("🔑 Owner Panel", url="https://t.me/YourUsername")]
+        [InlineKeyboardButton("🔑 Owner Panel", url="https://t.me/INTROVERT_HU_YRR")]
     ]
 
     await update.message.reply_photo(
