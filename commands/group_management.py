@@ -1,194 +1,153 @@
-# group_management.py
 from telegram import Update, ChatPermissions
-from telegram.ext import CommandHandler, Application, ContextTypes, MessageHandler, filters
+from telegram.ext import CommandHandler, Application, ContextTypes
 from telegram.constants import ChatMemberStatus
 
-# Dictionary to track warnings
+# In-memory warnings storage
 warnings = {}
 
-# Helper to check if user is admin
-async def is_user_admin(update: Update, user_id: int):
+# ------------------ Helper ------------------
+async def get_target_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Returns target user either by reply or by argument (id/username)
+    """
+    if update.message.reply_to_message:
+        return update.message.reply_to_message.from_user
+    elif context.args:
+        arg = context.args[0]
+        chat_members = await update.effective_chat.get_administrators()
+        try:
+            # Try by user_id
+            user_id = int(arg)
+            member = await update.effective_chat.get_member(user_id)
+            return member.user
+        except ValueError:
+            # Try by username (without @)
+            username = arg.replace("@", "")
+            for member in chat_members + [await update.effective_chat.get_member(update.effective_user.id)]:
+                if member.user.username == username:
+                    return member.user
+    return None
+
+async def is_admin(update: Update, user_id: int):
     member = await update.effective_chat.get_member(user_id)
     return member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
 
-# ------------------ KICK ------------------
-async def kick(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
-
-    if chat.type not in ["group", "supergroup"]:
-        return await update.message.reply_text("❌ This command works only in groups!")
-
-    if not await is_user_admin(update, user.id):
-        return await update.message.reply_text("⛔ You must be an admin to use this command!")
-
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("❌ Reply to the user you want to kick.")
-
-    target = update.message.reply_to_message.from_user
-    try:
-        await chat.kick_member(target.id)
-        await update.message.reply_text(f"✅ {target.full_name} has been kicked!")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Failed to kick: {e}")
-
 # ------------------ BAN ------------------
 async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        return await update.message.reply_text("❌ Only in groups!")
+    if not await is_admin(update, update.effective_user.id):
+        return await update.message.reply_text("⛔ You must be an admin!")
 
-    if chat.type not in ["group", "supergroup"]:
-        return await update.message.reply_text("❌ This command works only in groups!")
+    target = await get_target_user(update, context)
+    if not target:
+        return await update.message.reply_text("❌ User not found! Reply or provide username/id.")
 
-    if not await is_user_admin(update, user.id):
-        return await update.message.reply_text("⛔ You must be an admin to use this command!")
-
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("❌ Reply to the user you want to ban.")
-
-    target = update.message.reply_to_message.from_user
     try:
-        await chat.ban_member(target.id)
+        await update.effective_chat.ban_member(target.id)
         await update.message.reply_text(f"✅ {target.full_name} has been banned!")
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed to ban: {e}")
+        await update.message.reply_text(f"❌ Error: {e}")
 
 # ------------------ UNBAN ------------------
 async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        return await update.message.reply_text("❌ Only in groups!")
+    if not await is_admin(update, update.effective_user.id):
+        return await update.message.reply_text("⛔ You must be an admin!")
 
-    if chat.type not in ["group", "supergroup"]:
-        return await update.message.reply_text("❌ This command works only in groups!")
+    target = await get_target_user(update, context)
+    if not target:
+        return await update.message.reply_text("❌ User not found! Reply or provide username/id.")
 
-    if not await is_user_admin(update, user.id):
-        return await update.message.reply_text("⛔ You must be an admin to use this command!")
-
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("❌ Reply to the user you want to unban.")
-
-    target = update.message.reply_to_message.from_user
     try:
-        await chat.unban_member(target.id)
+        await update.effective_chat.unban_member(target.id)
         await update.message.reply_text(f"✅ {target.full_name} has been unbanned!")
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed to unban: {e}")
+        await update.message.reply_text(f"❌ Error: {e}")
 
 # ------------------ MUTE ------------------
 async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        return await update.message.reply_text("❌ Only in groups!")
+    if not await is_admin(update, update.effective_user.id):
+        return await update.message.reply_text("⛔ Admins only!")
 
-    if chat.type not in ["group", "supergroup"]:
-        return await update.message.reply_text("❌ This command works only in groups!")
+    target = await get_target_user(update, context)
+    if not target:
+        return await update.message.reply_text("❌ User not found!")
 
-    if not await is_user_admin(update, user.id):
-        return await update.message.reply_text("⛔ You must be an admin to use this command!")
-
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("❌ Reply to the user you want to mute.")
-
-    target = update.message.reply_to_message.from_user
     try:
-        await chat.restrict_member(target.id, permissions=ChatPermissions(can_send_messages=False))
+        await update.effective_chat.restrict_member(
+            target.id,
+            permissions=ChatPermissions(can_send_messages=False)
+        )
         await update.message.reply_text(f"✅ {target.full_name} has been muted!")
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed to mute: {e}")
+        await update.message.reply_text(f"❌ Error: {e}")
 
 # ------------------ UNMUTE ------------------
 async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        return await update.message.reply_text("❌ Only in groups!")
+    if not await is_admin(update, update.effective_user.id):
+        return await update.message.reply_text("⛔ Admins only!")
 
-    if chat.type not in ["group", "supergroup"]:
-        return await update.message.reply_text("❌ This command works only in groups!")
+    target = await get_target_user(update, context)
+    if not target:
+        return await update.message.reply_text("❌ User not found!")
 
-    if not await is_user_admin(update, user.id):
-        return await update.message.reply_text("⛔ You must be an admin to use this command!")
-
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("❌ Reply to the user you want to unmute.")
-
-    target = update.message.reply_to_message.from_user
     try:
-        await chat.restrict_member(target.id, permissions=ChatPermissions(can_send_messages=True))
+        await update.effective_chat.restrict_member(
+            target.id,
+            permissions=ChatPermissions(
+                can_send_messages=True,
+                can_send_media_messages=True,
+                can_send_polls=True,
+                can_send_other_messages=True,
+                can_add_web_page_previews=True
+            )
+        )
         await update.message.reply_text(f"✅ {target.full_name} has been unmuted!")
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed to unmute: {e}")
-
-# ------------------ LOCK ------------------
-async def lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
-    if chat.type not in ["group", "supergroup"]:
-        return await update.message.reply_text("❌ Only in groups!")
-    if not await is_user_admin(update, user.id):
-        return await update.message.reply_text("⛔ Admins only!")
-    try:
-        await chat.set_permissions(ChatPermissions(can_send_messages=False))
-        await update.message.reply_text("🔒 Group has been locked!")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Failed to lock: {e}")
-
-# ------------------ UNLOCK ------------------
-async def unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
-    if chat.type not in ["group", "supergroup"]:
-        return await update.message.reply_text("❌ Only in groups!")
-    if not await is_user_admin(update, user.id):
-        return await update.message.reply_text("⛔ Admins only!")
-    try:
-        await chat.set_permissions(ChatPermissions(can_send_messages=True))
-        await update.message.reply_text("🔓 Group has been unlocked!")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Failed to unlock: {e}")
+        await update.message.reply_text(f"❌ Error: {e}")
 
 # ------------------ WARN ------------------
 async def warn(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
-    if chat.type not in ["group", "supergroup"]:
+    if update.effective_chat.type not in ["group", "supergroup"]:
         return await update.message.reply_text("❌ Only in groups!")
-    if not await is_user_admin(update, user.id):
+    if not await is_admin(update, update.effective_user.id):
         return await update.message.reply_text("⛔ Admins only!")
-    if not update.message.reply_to_message:
-        return await update.message.reply_text("❌ Reply to the user you want to warn.")
 
-    target = update.message.reply_to_message.from_user
+    target = await get_target_user(update, context)
+    if not target:
+        return await update.message.reply_text("❌ User not found!")
+
     warnings[target.id] = warnings.get(target.id, 0) + 1
-    await update.message.reply_text(f"⚠️ {target.full_name} has been warned! Total: {warnings[target.id]}")
+    await update.message.reply_text(f"⚠️ {target.full_name} has been warned! Total warnings: {warnings[target.id]}")
 
-# ------------------ PURGE ------------------
-async def purge(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    chat = update.effective_chat
-
-    if chat.type not in ["group", "supergroup"]:
+# ------------------ UNWARN ------------------
+async def unwarn(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type not in ["group", "supergroup"]:
         return await update.message.reply_text("❌ Only in groups!")
-    if not await is_user_admin(update, user.id):
+    if not await is_admin(update, update.effective_user.id):
         return await update.message.reply_text("⛔ Admins only!")
 
-    args = context.args
-    if not args or not args[0].isdigit():
-        return await update.message.reply_text("❌ Usage: /purge <number_of_messages> (reply optional)")
+    target = await get_target_user(update, context)
+    if not target:
+        return await update.message.reply_text("❌ User not found!")
 
-    count = int(args[0])
-    async for message in chat.get_history(limit=count):
-        try:
-            await message.delete()
-        except:
-            continue
-    await update.message.reply_text(f"✅ {count} messages deleted!")
+    if warnings.get(target.id):
+        warnings[target.id] -= 1
+        await update.message.reply_text(f"✅ {target.full_name} has been unwarned! Total warnings: {warnings[target.id]}")
+    else:
+        await update.message.reply_text(f"ℹ️ {target.full_name} has no warnings.")
 
 # ------------------ REGISTER HANDLERS ------------------
 def register_group_management(app: Application):
-    app.add_handler(CommandHandler("kick", kick))
     app.add_handler(CommandHandler("ban", ban))
     app.add_handler(CommandHandler("unban", unban))
     app.add_handler(CommandHandler("mute", mute))
     app.add_handler(CommandHandler("unmute", unmute))
-    app.add_handler(CommandHandler("lock", lock))
-    app.add_handler(CommandHandler("unlock", unlock))
     app.add_handler(CommandHandler("warn", warn))
-    app.add_handler(CommandHandler("purge", purge))
+    app.add_handler(CommandHandler("unwarn", unwarn))
