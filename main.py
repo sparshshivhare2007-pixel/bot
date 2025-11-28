@@ -17,8 +17,6 @@ from helpers import get_user, users, add_group_user
 
 # Commands
 from commands.start_command import start_command, button_handler
-from commands.log_handler import log_start  # Keep existing start log
-
 from commands.economy_guide import economy_guide
 from commands.transfer_balance import transfer_balance
 from commands.claim import claim
@@ -45,7 +43,7 @@ from commands.couple import couple
 # Load environment
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-OWNER_ID = int(os.getenv("OWNER_ID", 0))  # Owner ID
+OWNER_ID = int(os.getenv("OWNER_ID", 0))
 MONGO_URI = os.getenv("MONGO_URI")
 
 # ------------------- MongoDB Log System -------------------
@@ -70,22 +68,6 @@ async def send_log_message(bot: Bot, text: str, parse_mode='HTML'):
             print(f"Error sending log message to {target_id}: {e}")
     else:
         print("Warning: Log chat ID and OWNER_ID are not set. Cannot send logs.")
-
-async def log_bot_startup(bot: Bot, total_users: int = 0):
-    try:
-        owner_info = await bot.get_chat(OWNER_ID)
-        owner_name = owner_info.first_name
-        owner_username = f"@{owner_info.username}" if owner_info.username else "@No Username"
-        message = (
-            f"𝐊𝐚𝐦𝐚𝐥 ʜᴀs sᴛᴀʀᴛᴇᴅ ʙᴏᴛ.\n\n"
-            f"ɴᴀᴍᴇ : {owner_name}\n"
-            f"ᴜsᴇʀɴᴀᴍᴇ : {owner_username}\n"
-            f"ɪᴅ : <code>{OWNER_ID}</code>\n\n"
-            f"ᴛᴏᴛᴀʟ ᴜsᴇʀs : {total_users}"
-        )
-        await send_log_message(bot, message)
-    except Exception as e:
-        print(f"Error logging bot startup: {e}")
 
 # ------------------- Owner Log Commands -------------------
 async def setlog(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -174,10 +156,8 @@ async def my_chat_member_update(update: Update, context: ContextTypes.DEFAULT_TY
     new_status = update.my_chat_member.new_chat_member.status
     chat = update.effective_chat
     if new_status in ["member", "administrator"]:
-        # Bot added
         await send_log_message(context.bot, f"🤖 Bot added to group: {chat.title} ({chat.id})")
     elif new_status == "left":
-        # Bot removed
         await send_log_message(context.bot, f"👋 Bot removed from group: {chat.title} ({chat.id})")
 
 # ------------------- Main -------------------
@@ -188,9 +168,10 @@ def main():
     # Track users
     app.add_handler(MessageHandler(~filters.COMMAND, track_users))
 
-    # Start command with log
+    # Start command with logging
     async def start_wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await log_start(update, context)  # existing start log
+        # Log user start
+        await send_log_message(context.bot, f"👤 User {update.effective_user.first_name} started the bot!")
         await start_command(update, context)
     app.add_handler(CommandHandler("start", start_wrapper))
 
