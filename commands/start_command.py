@@ -16,15 +16,18 @@ async def start_command(update: Update, context: CallbackContext):
         
     )
 
-    keyboard = [
-        [InlineKeyboardButton("💬 Talk to 𝐀𝐤e𝐧o", callback_data="talk")],
-        [
-            InlineKeyboardButton("🧸 Friends", url="https://t.me/mich_family_group"),
-            InlineKeyboardButton("🎮 Games", callback_data="games")
-        ],
-        [InlineKeyboardButton("👻 Meet me here", url="https://t.me/mich_family_group")],
-        [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/?startgroup=true")]
-    ]
+    
+keyboard = [
+    [InlineKeyboardButton("💬 Talk to 𝐀𝐤e𝐧o", callback_data="talk")],
+    [
+        InlineKeyboardButton("🧸 Friends", url="https://t.me/mich_family_group"),
+        InlineKeyboardButton("🎮 Games", callback_data="games")
+    ],
+    [InlineKeyboardButton("👻 Meet me here", url="https://t.me/mich_family_group")],
+    [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/?startgroup=true")],
+    [InlineKeyboardButton("🔑 Owner Panel", url="https://t.me/INTROVERT_HU_YRR")]  # 🔥 CLICKABLE OWNER BUTTON 
+]
+
 
     await update.message.reply_photo(
         photo=BOT_IMAGE_URL,
