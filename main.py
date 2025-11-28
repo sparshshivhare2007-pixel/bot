@@ -20,9 +20,6 @@ OWNER_ID = int(os.getenv("OWNER_ID", "0"))  # ADD THIS IN YOUR .env
 # -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
 
-# Sticker ID command
-from commands.sticker_id_command import register_sticker_id_handlers
-
 # Economy
 from commands.economy_guide import economy_guide
 from commands.transfer_balance import transfer_balance
@@ -92,7 +89,7 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👤 𝐍𝐚𝐦𝐞: {name}\n"
         f"💰 𝐁𝐚𝐥𝐚𝐧𝐜𝐞: ${user['balance']}\n"
         f"🏆 𝐆𝐥𝐨𝐛𝐚𝐥 𝐑𝐚𝐧𝐤: #{rank}\n"
-        f"❤️ 𝐒𝐭𝐚𝐭𝐮𝐬: {status}\n"
+        f"❤️ 𝐒𝐭𝐚𝐭𝐮ѕ: {status}\n"
         f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
 
@@ -154,9 +151,6 @@ def main():
     app.add_handler(CommandHandler("punch", punch))
     app.add_handler(CommandHandler("hug", hug))
     app.add_handler(CommandHandler("couple", couple))
-
-    # -------------------- STICKER_ID COMMAND --------------------
-    register_sticker_id_handlers(app)  # v20+ compatible
 
     print("🚀 Bot Started Successfully!")
     app.run_polling()
