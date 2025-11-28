@@ -1,12 +1,12 @@
-# start_command.py
+# commands/start_command.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext
+from telegram.ext import ContextTypes  # Use ContextTypes for async PTB v20+
 
 # 🚨 IMPORTANT: Replace this URL with the direct link to your bot's welcome image
 BOT_IMAGE_URL = "https://files.catbox.moe/z1skp4.jpg"
 
 # /start command
-async def start_command(update: Update, context: CallbackContext):
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
     text = (
@@ -25,24 +25,29 @@ async def start_command(update: Update, context: CallbackContext):
         [InlineKeyboardButton("👥 Add me to your group", url="https://t.me/?startgroup=true")]
     ]
 
-    await update.message.reply_photo(
-        photo=BOT_IMAGE_URL,
-        caption=text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="Markdown"
-    )
+    try:
+        await update.message.reply_photo(
+            photo=BOT_IMAGE_URL,
+            caption=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="MarkdownV2"  # safer for special characters and emojis
+        )
+    except Exception as e:
+        print(f"❌ Error in start_command: {e}")
 
 # Callback query handler
-async def button_handler(update: Update, context: CallbackContext):
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    if not query:
+        return
+
+    await query.answer()  # Always answer the callback first
 
     if query.data == "talk":
-        await query.answer()
         await query.message.reply_text("Let's chat! 💬")
 
     elif query.data == "games":
-        await query.answer()
-        await query.message.reply_text(
+        guide_text = (
             "💰 *Akeno Economy System Guide*\n\n"
             "💬 How it works:\n"
             "Manage your virtual money and items in the group! Use commands below to earn, gift, buy, or interact with others.\n\n"
@@ -62,6 +67,6 @@ async def button_handler(update: Update, context: CallbackContext):
             "• Earn money by killing others\n"
             "• Gift money with 10% fee\n"
             "• Buy protection to avoid robbery\n"
-            "• Top rankings for richest and killers",
-            parse_mode="Markdown"
+            "• Top rankings for richest and killers"
         )
+        await query.message.reply_text(guide_text, parse_mode="MarkdownV2")
