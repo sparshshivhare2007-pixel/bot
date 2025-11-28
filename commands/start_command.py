@@ -1,39 +1,43 @@
+# start_command.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+import asyncio
+from html import escape
 
-# IMAGE FOR GROUP START
+# IMAGE & STICKER
 BOT_IMAGE_URL = "https://files.catbox.moe/z1skp4.jpg"
-STICKER_ID = "`CAACAgQAAxkBAAEPiQppKcATJi3RB9_QwVlyK2EjxisdogACUhUAAnRkqVPXj4u7QSZIGR4E`"  # apna DM sticker id
+BOT_STICKER_ID = "CAACAgQAAxkBAAEPiQppKcATJi3RB9_QwVlyK2EjxisdogACUhUAAnRkqVPXj4u7QSZIGR4E"  # Your sticker ID
 
-
+# /start command
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     chat = update.effective_chat
 
-    # CLICKABLE NAME
-    mention = f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
+    safe_name = escape(user.first_name)
+    mention = f"<a href='tg://user?id={user.id}'>{safe_name}</a>"
 
     # ---------- DM START ----------
     if chat.type == "private":
-        # DM style
-        text = (
-            f"Welcome Baby 🩵\n"
-            f"{mention} <i>🌹</i>\n"
-            f".. 😅"
-        )
+        # Step 1: Typing effect + Welcome message
+        await context.bot.send_chat_action(chat.id, "typing")
+        await asyncio.sleep(1)
+        welcome_text = f"💌 Welcome Baby 🩵\n{mention} 🌹\n.. 😅"
+        await update.message.reply_text(welcome_text, parse_mode="HTML")
 
-        # send sticker first
-        await update.message.reply_sticker(STICKER_ID)
+        # Step 2: Typing effect + Sticker
+        await context.bot.send_chat_action(chat.id, "typing")
+        await asyncio.sleep(1)
+        try:
+            await update.message.reply_sticker(BOT_STICKER_ID)
+        except Exception as e:
+            print(f"⚠️ Sticker send failed: {e}")
 
-        # send DM message
-        await update.message.reply_text(
-            text,
-            parse_mode="HTML"
-        )
+        # Step 3: Optional extra message for animation feel
+        await asyncio.sleep(0.5)
+        await update.message.reply_text("✨ Glad to see you here!", parse_mode="HTML")
         return
 
     # ---------- GROUP START ----------
-    # Group style (image + buttons)
     text = (
         f"👋 Hey, →🪬{mention}🪬🤍\n"
         "💞 You're talking to <b>𝐀𝐤e𝐧o</b>, a sassy cutie bot 👻💕\n\n"
@@ -56,7 +60,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="HTML"
     )
-
 
 # Callback query handler
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
