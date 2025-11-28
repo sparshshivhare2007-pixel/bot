@@ -1,120 +1,133 @@
 from telegram import Update, ChatPermissions
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler
 
-# Warn storage (You can replace with database later)
-user_warnings = {}
-
-# Helper: check admin
-async def is_admin(update: Update, user_id: int):
-    chat_admins = await update.effective_chat.get_administrators()
-    admin_ids = [admin.user.id for admin in chat_admins]
-    return user_id in admin_ids
+# Warns store (memory)
+user_warns = {}
 
 
-# ------------------ BAN ------------------
-async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, update.effective_user.id):
-        return await update.message.reply_text("❌ You must be admin to use this.")
-
-    # get user from reply or args
+# ------------------- Helper: Get Target User -------------------
+def get_target(update: Update):
     if update.message.reply_to_message:
-        user_id = update.message.reply_to_message.from_user.id
-    elif context.args:
-        user_id = int(context.args[0])
+        return update.message.reply_to_message.from_user
     else:
-        return await update.message.reply_text("⚠ Reply or give User ID to /ban")
-
-    await update.effective_chat.ban_member(user_id)
-    await update.message.reply_text("🚫 User has been *banned* successfully!", parse_mode="HTML")
-
-
-# ------------------ UNBAN ------------------
-async def unban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, update.effective_user.id):
-        return await update.message.reply_text("❌ You must be admin to use this.")
-
-    if update.message.reply_to_message:
-        user_id = update.message.reply_to_message.from_user.id
-    elif context.args:
-        user_id = int(context.args[0])
-    else:
-        return await update.message.reply_text("⚠ Reply or give User ID to /unban")
-
-    await update.effective_chat.unban_member(user_id)
-    await update.message.reply_text("✅ User has been *unbanned* and can join again.", parse_mode="HTML")
+        parts = update.message.text.split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            return type("obj", (object,), {"id": int(parts[1]), "first_name": "User"})
+    return None
 
 
-# ------------------ MUTE ------------------
-async def mute_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, update.effective_user.id):
-        return await update.message.reply_text("❌ Admin required.")
+# ------------------- BAN -------------------
+async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = get_target(update)
+    chat = update.effective_chat
+    bot = context.bot
 
-    if update.message.reply_to_message:
-        user_id = update.message.reply_to_message.from_user.id
-    elif context.args:
-        user_id = int(context.args[0])
-    else:
-        return await update.message.reply_text("⚠ Reply or give User ID to /mute")
+    if not user:
+        return await update.message.reply_text("⚠️ Reply or give user ID to ban.")
 
-    perms = ChatPermissions(can_send_messages=False)
-    await update.effective_chat.restrict_member(user_id, perms)
-
-    await update.message.reply_text("🔇 User has been *muted*.", parse_mode="HTML")
+    try:
+        await bot.ban_chat_member(chat.id, user.id)
+        await update.message.reply_text(f"🚫 Banned: {user.first_name}")
+    except:
+        await update.message.reply_text("❌ I don't have permissions to ban.")
 
 
-# ------------------ UNMUTE ------------------
-async def unmute_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, update.effective_user.id):
-        return await update.message.reply_text("❌ Admin required.")
+# ------------------- UNBAN -------------------
+async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = get_target(update)
+    chat = update.effective_chat
+    bot = context.bot
 
-    if update.message.reply_to_message:
-        user_id = update.message.reply_to_message.from_user.id
-    elif context.args:
-        user_id = int(context.args)[0]
-    else:
-        return await update.message.reply_text("⚠ Reply or give User ID to /unmute")
+    if not user:
+        return await update.message.reply_text("⚠️ Reply or give user ID to unban.")
 
-    perms = ChatPermissions(
-        can_send_messages=True,
-        can_send_media_messages=True,
-        can_send_other_messages=True,
-        can_add_web_page_previews=True
-    )
-    await update.effective_chat.restrict_member(user_id, perms)
-
-    await update.message.reply_text("🔊 User has been *unmuted*.", parse_mode="HTML")
+    try:
+        await bot.unban_chat_member(chat.id, user.id)
+        await update.message.reply_text(f"♻️ Unbanned: {user.first_name}\nUser can rejoin now.")
+    except:
+        await update.message.reply_text("❌ Unable to unban user.")
 
 
-# ------------------ WARN ------------------
-async def warn_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, update.effective_user.id):
-        return await update.message.reply_text("❌ Admin required.")
+# ------------------- MUTE -------------------
+async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = get_target(update)
+    chat = update.effective_chat
 
-    if update.message.reply_to_message:
-        user_id = update.message.reply_to_message.from_user.id
-    else:
-        return await update.message.reply_text("⚠ Reply to user to /warn")
+    if not user:
+        return await update.message.reply_text("⚠️ Reply or give user ID to mute.")
 
-    user_warnings[user_id] = user_warnings.get(user_id, 0) + 1
+    try:
+        await chat.restrict_member(
+            user.id,
+            ChatPermissions(can_send_messages=False)
+        )
+        await update.message.reply_text(f"🔇 Muted: {user.first_name}")
+    except:
+        await update.message.reply_text("❌ I don't have permission to mute.")
 
+
+# ------------------- UNMUTE -------------------
+async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = get_target(update)
+    chat = update.effective_chat
+
+    if not user:
+        return await update.message.reply_text("⚠️ Reply or give user ID to unmute.")
+
+    try:
+        await chat.restrict_member(
+            user.id,
+            ChatPermissions(
+                can_send_messages=True,
+                can_send_media_messages=True,
+                can_send_other_messages=True,
+                can_add_web_page_previews=True
+            )
+        )
+        await update.message.reply_text(f"🔊 Unmuted: {user.first_name}")
+    except:
+        await update.message.reply_text("❌ Unable to unmute user.")
+
+
+# ------------------- WARN -------------------
+async def warn(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = get_target(update)
+    if not user:
+        return await update.message.reply_text("⚠️ Reply or give user ID to warn.")
+
+    user_warns[user.id] = user_warns.get(user.id, 0) + 1
+
+    warns = user_warns[user.id]
     await update.message.reply_text(
-        f"⚠ Warning issued.\nTotal Warnings: {user_warnings[user_id]}"
+        f"⚠️ Warning issued to {user.first_name}\n"
+        f"Total warns: {warns}"
     )
 
 
-# ------------------ UNWARN ------------------
-async def unwarn_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, update.effective_user.id):
-        return await update.message.reply_text("❌ Admin required.")
+# ------------------- UNWARN -------------------
+async def unwarn(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = get_target(update)
 
-    if update.message.reply_to_message:
-        user_id = update.message.reply_to_message.from_user.id
-    else:
-        return await update.message.reply_text("⚠ Reply to user to /unwarn")
+    if not user:
+        return await update.message.reply_text("⚠️ Reply or give ID to unwarn.")
 
-    if user_id in user_warnings and user_warnings[user_id] > 0:
-        user_warnings[user_id] -= 1
+    if user.id not in user_warns or user_warns[user.id] == 0:
+        return await update.message.reply_text("ℹ️ User has no warnings.")
 
+    user_warns[user.id] -= 1
     await update.message.reply_text(
-        f"✅ Warning removed.\nRemaining Warnings: {user_warnings.get(user_id, 0)}"
+        f"♻️ Warning removed.\nRemaining warns: {user_warns[user.id]}"
     )
+
+
+# ===================== REGISTER HANDLERS ========================
+def register_group_management(app):
+
+    app.add_handler(CommandHandler("ban", ban))
+    app.add_handler(CommandHandler("unban", unban))
+
+    app.add_handler(CommandHandler("mute", mute))
+    app.add_handler(CommandHandler("unmute", unmute))
+
+    app.add_handler(CommandHandler("warn", warn))
+    app.add_handler(CommandHandler("unwarn", unwarn))
