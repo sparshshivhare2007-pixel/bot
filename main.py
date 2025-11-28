@@ -67,11 +67,13 @@ async def balance(update, context):
 # Global error handler
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Exception while handling an update: {context.error}")
-    # Optional: reply to user
+    
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text("❌ Something went wrong!")
-        
-        async def work(update, context):
+
+
+# balance command (properly outside error_handler)
+async def balance(update, context):
     user = get_user(update.effective_user.id)
     reward = 200
 
