@@ -1,4 +1,3 @@
-# main.py
 import os
 from dotenv import load_dotenv
 from telegram import Update
@@ -8,24 +7,41 @@ from telegram.ext import (
     CallbackQueryHandler,
     ContextTypes,
     MessageHandler,
-    filters
+    filters,
 )
+import random
 
-# Helpers
-from helpers import get_user, user_db, add_group_id, users
-
-# Load environment
+# -------------------- LOAD ENV --------------------
 load_dotenv()
+
+# Economy Bot Env
 TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "0"))
 
-# -------------------- IMPORT COMMANDS --------------------
+# ChatBot Env
+API_ID = int(os.getenv("API_ID", "26907246"))
+API_HASH = os.getenv("API_HASH", "1f75814e906cda223691847638b9fe94")
+MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://pusers:nycreation@nycreation.pd4klp1.mongodb.net/?retryWrites=true&w=majority&appName=NYCREATION")
+SUPPORT_GRP = os.getenv("SUPPORT_GRP", "Shizuka_support")
+UPDATE_CHNL = os.getenv("UPDATE_CHNL", "shizuka_bots")
+OWNER_USERNAME = os.getenv("OWNER_USERNAME", "INTROVERT_HU_YRR")
+
+# -------------------- HELPERS --------------------
+from helpers import (
+    get_user,
+    user_db,
+    add_group_id,
+    runtime_users,
+    runtime_groups,
+    group_db
+)
+
+# -------------------- ECONOMY COMMANDS --------------------
 from commands.start_command import start_command, button_handler
-from commands.group_management import register_group_management  
-
-# Economy main guide
+from commands.group_management import register_group_management
 from commands.economy_guide import economy_guide
-from commands.help_command import help_command  
+from commands.help_command import help_command
 
 # Economy Core
 from commands.transfer_balance import transfer_balance
@@ -48,11 +64,12 @@ from commands.open_economy import open_economy
 from commands.close_economy import close_economy
 from commands.punch import punch
 
-# Fun commands
+# Fun
 from commands.hug import hug
 from commands.couple import couple
+from commands.kiss import kiss
 
-# Hidden commands
+# Hidden
 from commands.mine import mine
 from commands.farm import farm
 from commands.crime import crime
@@ -65,26 +82,97 @@ from commands.bank import bank
 from commands.deposit import deposit
 from commands.withdraw import withdraw
 
+# -------------------- CHATBOT MODULE --------------------
+# Create a folder chat/ with commands.py and helpers.py (see templates)
+from chat.commands import register_chat_handlers
 
-# -------------------- AUTO RESTART TEST COMMAND --------------------
+# -------------------- WELCOME PHOTOS --------------------
+WELCOME_PHOTOS = [
+    "https://telegra.ph/file/1949480f01355b4e87d26.jpg",
+    "https://telegra.ph/file/3ef2cc0ad2bc548bafb30.jpg",
+]
+
+# -------------------- BOT LOGGING --------------------
+async def on_bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not LOG_GROUP_ID:
+        return
+    if not update.message or not update.message.new_chat_members:
+        return
+
+    bot_added = any(m.id == context.bot.id for m in update.message.new_chat_members)
+    if not bot_added:
+        return
+
+    chat = update.effective_chat
+    added_by = update.message.from_user
+
+    try:
+        count = await context.bot.get_chat_members_count(chat.id)
+    except:
+        count = "Unknown"
+
+    username = chat.username if chat.username else "Private Group"
+
+    caption = (
+        f"🤖 Bot Added In A New Group\n\n"
+        f"Name: {chat.title}\n"
+        f"ID: {chat.id}\n"
+        f"Username: @{username}\n"
+        f"Members: {count}\n"
+        f"Added By: {added_by.first_name}"
+    )
+
+    try:
+        await context.bot.send_photo(
+            chat_id=LOG_GROUP_ID,
+            photo=random.choice(WELCOME_PHOTOS),
+            caption=caption
+        )
+    except:
+        pass
+
+async def on_new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not LOG_GROUP_ID or not update.message or not update.message.new_chat_members:
+        return
+
+    chat = update.effective_chat
+    for member in update.message.new_chat_members:
+        if member.id == context.bot.id:
+            continue
+        add_group_id(chat.id)
+        try:
+            await context.bot.send_message(LOG_GROUP_ID, f"✅ New Member in {chat.title}: {member.first_name}")
+        except:
+            pass
+
+async def on_left_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not LOG_GROUP_ID or not update.message or not update.message.left_chat_member:
+        return
+    chat = update.effective_chat
+    left = update.message.left_chat_member
+    try:
+        await context.bot.send_photo(
+            chat_id=LOG_GROUP_ID,
+            photo=random.choice(WELCOME_PHOTOS),
+            caption=f"❌ Member Left {chat.title}: {left.first_name}"
+        )
+    except:
+        pass
+
+# -------------------- AUTO RESTART --------------------
 async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if user.id != OWNER_ID:
-        return await update.message.reply_text("⛔ You are not authorized to use this command.")
+    if update.effective_user.id != OWNER_ID:
+        return await update.message.reply_text("⛔ You are not authorized.")
     await update.message.reply_text("🔄 Restarting bot...")
     os._exit(1)
 
-
-# -------------------- TRACK GROUP USERS --------------------
+# -------------------- TRACK USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
-
-    # Track only in groups
     if chat.type in ["group", "supergroup"]:
         add_group_id(chat.id)
 
-
-# -------------------- BALANCE COMMAND --------------------
+# -------------------- BALANCE --------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.reply_to_message:
         target = update.message.reply_to_message.from_user
@@ -95,56 +183,70 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         name = update.effective_user.first_name
 
     user = get_user(user_id)
-
-    # Rank calculation
     rank_data = list(user_db.find().sort("balance", -1))
     ids = [u["user_id"] for u in rank_data]
 
     try:
         rank = ids.index(user_id) + 1
-    except ValueError:
+    except:
         rank = len(ids) + 1
 
     status = "☠️ Dead" if user.get("killed") else "Alive"
 
     await update.message.reply_text(
-        f"👤 𝐍𝐚𝐦𝐞: {name}\n"
-        f"💰 𝐁𝐚𝐥𝐚𝐧𝐜𝐞: ${user['balance']}\n"
-        f"🏆 𝐆𝐥𝐨𝐛𝐚𝐥 𝐑𝐚𝐧𝐤: #{rank}\n"
-        f"❤️ 𝐒𝐭𝐚𝐭𝐮𝐬: {status}\n"
-        f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
+        f"👤 Name: {name}\n"
+        f"💰 Balance: ${user.get('balance', 0)}\n"
+        f"🏆 Rank: #{rank}\n"
+        f"❤️ Status: {status}\n"
+        f"⚔️ Kills: {user.get('kills', 0)}"
     )
 
-
-# -------------------- WORK COMMAND --------------------
+# -------------------- WORK --------------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     reward = 200
     user_db.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": reward}})
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
 
+# -------------------- STATUS --------------------
+async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        f"📊 Bot Status:\n"
+        f"👥 Users (active): {len(runtime_users)}\n"
+        f"💬 Groups (active): {len(runtime_groups)}"
+    )
 
 # -------------------- ERROR HANDLER --------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Error: {context.error}")
-    if isinstance(update, Update) and update.effective_message:
-        await update.effective_message.reply_text("❌ Something went wrong!")
-
+    try:
+        if isinstance(update, Update) and update.effective_message:
+            await update.effective_message.reply_text("❌ Something went wrong!")
+    except:
+        pass
 
 # -------------------- MAIN --------------------
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_error_handler(error_handler)
 
-    # Track users (groups only)
+    # Track
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
 
-    # Start command (DM)
+    # Start
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
 
     # Restart
     app.add_handler(CommandHandler("test", test_restart))
+
+    # Join/Leave
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, on_bot_added))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, on_new_member))
+    app.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, on_left_member))
+
+    # Status
+    app.add_handler(CommandHandler("status", status_command))
 
     # Economy Commands
     economy_commands = [
@@ -156,31 +258,32 @@ def main():
         ("topkill", topkill), ("kill", kill), ("revive", revive),
         ("open", open_economy), ("close", close_economy)
     ]
-
     for cmd, handler in economy_commands:
         app.add_handler(CommandHandler(cmd, handler))
 
     # Help
     app.add_handler(CommandHandler("help", help_command))
 
-    # Hidden Commands
-    hidden_cmds = [
-        ("mine", mine), ("farm", farm), ("crime", crime), ("heal", heal),
-        ("shop", shop), ("buy", buy), ("sell", sell),
+    # Hidden
+    hidden = [
+        ("mine", mine), ("farm", farm), ("crime", crime),
+        ("heal", heal), ("shop", shop), ("buy", buy), ("sell", sell),
         ("profile", profile), ("bank", bank), ("deposit", deposit),
         ("withdraw", withdraw)
     ]
-
-    for cmd, handler in hidden_cmds:
+    for cmd, handler in hidden:
         app.add_handler(CommandHandler(cmd, handler))
 
-    # Fun Commands
-    fun_commands = [("punch", punch), ("hug", hug), ("couple", couple)]
-    for cmd, handler in fun_commands:
+    # Fun
+    fun = [("punch", punch), ("hug", hug), ("couple", couple), ("kiss", kiss)]
+    for cmd, handler in fun:
         app.add_handler(CommandHandler(cmd, handler))
 
-    # Group Manage
+    # Group Management
     register_group_management(app)
+
+    # ---- Register ChatBot Handlers ----
+    register_chat_handlers(app)
 
     print("🚀 Bot Started Successfully!")
     app.run_polling()
