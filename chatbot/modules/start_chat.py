@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from chat.chat_helpers import get_chat_user, is_user_exists  # <- helpers import
+from chat.chat_helpers import get_chat_user, is_user_exists
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
