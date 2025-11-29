@@ -1,15 +1,15 @@
-from pyrogram import filters
-from chatbot.chatbot import ChatBot
-import random
+from telegram import Update
+from telegram.ext import ContextTypes
 
-RESPONSES = [
-    "Aur batao 😄",
-    "Hmm, interesting! 😁",
-    "Nicee 🔥",
-    "Bhot sahi 😎",
-    "I'm here ❤️",
-]
+async def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.lower()
 
-@ChatBot.on_message(filters.private & ~filters.command(["start", "help", "broadcast"]))
-async def auto_chat(bot, message):
-    await message.reply_text(random.choice(RESPONSES))
+    # simple rules
+    if "hello" in text:
+        return await update.message.reply_text("Hi! 😊")
+
+    if "kaise ho" in text:
+        return await update.message.reply_text("Main bilkul mast! Aur tum? 😄")
+
+    # default reply
+    await update.message.reply_text("Hmm, interesting... aur batao?")
