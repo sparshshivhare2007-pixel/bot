@@ -1,4 +1,5 @@
 import os
+import random
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import (
@@ -9,7 +10,6 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-import random
 
 # -------------------- LOAD ENV --------------------
 load_dotenv()
@@ -21,8 +21,8 @@ LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "0"))
 
 # ChatBot Env
 API_ID = int(os.getenv("API_ID", "26907246"))
-API_HASH = os.getenv("API_HASH", "1f75814e906cda223691847638b9fe94")
-MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://pusers:nycreation@nycreation.pd4klp1.mongodb.net/?retryWrites=true&w=majority&appName=NYCREATION")
+API_HASH = os.getenv("API_HASH")
+MONGO_URL = os.getenv("MONGO_URL")
 SUPPORT_GRP = os.getenv("SUPPORT_GRP", "Shizuka_support")
 UPDATE_CHNL = os.getenv("UPDATE_CHNL", "shizuka_bots")
 OWNER_USERNAME = os.getenv("OWNER_USERNAME", "INTROVERT_HU_YRR")
@@ -83,7 +83,6 @@ from commands.deposit import deposit
 from commands.withdraw import withdraw
 
 # -------------------- CHATBOT MODULE --------------------
-# Create a folder chat/ with commands.py and helpers.py (see templates)
 from chat.commands import register_chat_handlers
 
 # -------------------- WELCOME PHOTOS --------------------
@@ -94,25 +93,20 @@ WELCOME_PHOTOS = [
 
 # -------------------- BOT LOGGING --------------------
 async def on_bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not LOG_GROUP_ID:
+    if not LOG_GROUP_ID or not update.message or not update.message.new_chat_members:
         return
-    if not update.message or not update.message.new_chat_members:
-        return
-
     bot_added = any(m.id == context.bot.id for m in update.message.new_chat_members)
     if not bot_added:
         return
 
     chat = update.effective_chat
     added_by = update.message.from_user
-
     try:
         count = await context.bot.get_chat_members_count(chat.id)
     except:
         count = "Unknown"
 
     username = chat.username if chat.username else "Private Group"
-
     caption = (
         f"🤖 Bot Added In A New Group\n\n"
         f"Name: {chat.title}\n"
@@ -121,7 +115,6 @@ async def on_bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Members: {count}\n"
         f"Added By: {added_by.first_name}"
     )
-
     try:
         await context.bot.send_photo(
             chat_id=LOG_GROUP_ID,
@@ -134,7 +127,6 @@ async def on_bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def on_new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not LOG_GROUP_ID or not update.message or not update.message.new_chat_members:
         return
-
     chat = update.effective_chat
     for member in update.message.new_chat_members:
         if member.id == context.bot.id:
@@ -185,12 +177,10 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(user_id)
     rank_data = list(user_db.find().sort("balance", -1))
     ids = [u["user_id"] for u in rank_data]
-
     try:
         rank = ids.index(user_id) + 1
     except:
         rank = len(ids) + 1
-
     status = "☠️ Dead" if user.get("killed") else "Alive"
 
     await update.message.reply_text(
@@ -287,7 +277,6 @@ def main():
 
     print("🚀 Bot Started Successfully!")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
