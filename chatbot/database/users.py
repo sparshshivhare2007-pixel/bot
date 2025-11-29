@@ -1,12 +1,13 @@
-from . import usersdb
+from pymongo import MongoClient
+import os
 
-async def is_user_exists(user_id: int) -> bool:
-    user = await usersdb.find_one({"user_id": user_id})
-    return bool(user)
+client = MongoClient(os.getenv("MONGO_URI"))
+db = client["chatbot"]
+usersdb = db["users"]
 
-async def add_user(user_id: int):
-    if not await is_user_exists(user_id):
-        await usersdb.insert_one({"user_id": user_id})
-
-async def get_served_users():
-    return [u async for u in usersdb.find()]
+async def get_user(user_id):
+    user = usersdb.find_one({"user_id": user_id})
+    if not user:
+        usersdb.insert_one({"user_id": user_id, "messages": 0})
+        user = usersdb.find_one({"user_id": user_id})
+    return user
