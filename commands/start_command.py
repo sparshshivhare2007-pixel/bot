@@ -1,17 +1,31 @@
-# start_command.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
+from helpers import users     # <- yaha se users set import
 
-# 🚨 IMPORTANT: Replace this URL with the direct link to your bot's welcome image
 BOT_IMAGE_URL = "https://files.catbox.moe/z1skp4.jpg"
+
 
 # /start command
 async def start_command(update: Update, context: CallbackContext):
+    chat = update.effective_chat
     user = update.effective_user
+
+    # ---------------------- GROUP START ----------------------
+    if chat.type in ["group", "supergroup"]:
+        return await update.message.reply_text(
+            f"👋 **Hello {user.first_name}!**\n"
+            f"Thanks for using Akeno in this group 💙\n\n"
+            f"Use /help to see all commands!",
+            parse_mode="Markdown"
+        )
+
+    # ---------------------- DM START ----------------------
+    # ⬇️ YAHI ADD KARNA HAI
+    users.add(user.id)
 
     text = (
         f"⬤ 𖦹 {user.first_name} - ᴄᴜᴛɪᴇ, ꜱᴀꜱꜱʏ, ᴀ ʟɪᴛᴛʟᴇ ᴡɪʟᴅ ᴀɴᴅ ɢᴀᴍᴇ ᴘᴀʀᴛɴᴇʀ 🤍\n\n"
-        "⬤ ᴊᴜꜱᴛ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴀɴᴅ ᴇɴᴊᴏʏ ᴛʜᴇ ᴄʜᴀᴛꜱ ᴀɴᴅ ɢᴀᴍᴇꜱ ᴡɪᴛʜ ᴍᴇ ᴛʜᴀᴛ ᴍᴀᴋᴇꜱ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴡɪʟʟ ʙᴇ ᴍᴏꜱᴛ ᴀᴄᴛɪᴠᴇ!\n\n"
+        "⬤ ᴊᴜꜱᴛ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴀɴᴅ ᴇɴᴊᴏʏ ᴄʜᴀᴛꜱ & ɢᴀᴍᴇꜱ ᴡɪᴛʜ ᴍᴇ!\n\n"
         "☑ Choose an option below:"
     )
 
@@ -34,36 +48,26 @@ async def start_command(update: Update, context: CallbackContext):
     )
 
 
-# Callback query handler
+# ------------------- Callback query handler -------------------
 async def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
+    data = query.data
 
-    if query.data == "talk":
+    if data == "talk":
         await query.answer()
-        await query.message.reply_text("Let's chat! 💬")
+        return await query.message.reply_text("💬 Akeno is here… bolo cutie ❤️✨")
 
-    elif query.data == "games":
+    if data == "games":
         await query.answer()
-        await query.message.reply_text(
-            "💰 *Akeno Economy System Guide*\n\n"
-            "💬 How it works:\n"
-            "Manage your virtual money and items in the group! Use commands below to earn, gift, buy, or interact with others.\n\n"
-            "🔨 *Economy Commands:*\n"
-            "🔹 /close — Close economy commands working in the group\n"
-            "🔹 /open — Open economy commands working in the group\n"
-            "🔹 /bal — Check your/friend's balance\n"
-            "🔹 /toprich — See top 10 richest users\n"
-            "🔹 /topkill — See top 10 killers\n"
-            "🔹 /give (Reply) amount — Gift money to someone\n"
-            "🔹 /rob (Reply) amount (1-100000) — Rob someone\n"
-            "🔹 /kill (Reply) — Kill someone\n"
-            "🔹 /revive (Reply or without reply) — Revive you or your friend\n"
-            "🔹 /protect 1d|2d — Buy protection\n"
-            "🔹 /transfer amount — Owner only: Add/remove money\n\n"
-            "🎁 *Item & Gifting*\n"
-            "• Earn money by killing others\n"
-            "• Gift money with 10% fee\n"
-            "• Buy protection to avoid robbery\n"
-            "• Top rankings for richest and killers",
+        return await query.message.reply_text(
+            "💰 *Akeno Economy Guide*\n\n"
+            "🔹 /bal — Check balance\n"
+            "🔹 /rob — Rob someone\n"
+            "🔹 /kill — Kill someone\n"
+            "🔹 /revive — Revive\n"
+            "🔹 /give — Gift money\n"
+            "🔹 /protect — Buy protection\n"
+            "🔹 /transfer — Owner only\n\n"
+            "🎮 Earn, Gift & Rule the Economy!",
             parse_mode="Markdown"
         )
