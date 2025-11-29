@@ -6,7 +6,7 @@ from helpers import users, groups
 
 import asyncio
 
-OWNER_ID = 123456789  # <-- apna real owner id daalna
+OWNER_ID = 8379938997  # <-- apna real owner id daalna
 
 async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
