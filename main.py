@@ -12,7 +12,7 @@ from telegram.ext import (
 )
 
 # Helpers
-from helpers import get_user, users, add_group_user
+from helpers import get_user, user_db, add_group_id, users
 
 # Load environment
 load_dotenv()
@@ -25,7 +25,7 @@ from commands.group_management import register_group_management
 
 # Economy main guide
 from commands.economy_guide import economy_guide
-from commands.help_command import help_command  # Help command
+from commands.help_command import help_command  
 
 # Economy Core
 from commands.transfer_balance import transfer_balance
@@ -52,7 +52,7 @@ from commands.punch import punch
 from commands.hug import hug
 from commands.couple import couple
 
-# -------------------- HIDDEN SECRET ECONOMY COMMANDS --------------------
+# Hidden commands
 from commands.mine import mine
 from commands.farm import farm
 from commands.crime import crime
@@ -65,6 +65,7 @@ from commands.bank import bank
 from commands.deposit import deposit
 from commands.withdraw import withdraw
 
+
 # -------------------- AUTO RESTART TEST COMMAND --------------------
 async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -73,11 +74,15 @@ async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔄 Restarting bot...")
     os._exit(1)
 
+
 # -------------------- TRACK GROUP USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type in ["group", "supergroup"]:
-        user = update.effective_user
-        add_group_user(update.effective_chat.id, user.id, user.first_name)
+    chat = update.effective_chat
+
+    # Track only in groups
+    if chat.type in ["group", "supergroup"]:
+        add_group_id(chat.id)
+
 
 # -------------------- BALANCE COMMAND --------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -90,33 +95,34 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         name = update.effective_user.first_name
 
     user = get_user(user_id)
-    rank_pipeline = [
-        {"$sort": {"balance": -1}},
-        {"$group": {"_id": None, "users": {"$push": "$user_id"}}}
-    ]
-    rank_data = list(users.aggregate(rank_pipeline))
-    rank = 1
-    if rank_data:
-        try:
-            rank = rank_data[0]["users"].index(user_id) + 1
-        except ValueError:
-            rank = len(rank_data[0]["users"]) + 1
+
+    # Rank calculation
+    rank_data = list(user_db.find().sort("balance", -1))
+    ids = [u["user_id"] for u in rank_data]
+
+    try:
+        rank = ids.index(user_id) + 1
+    except ValueError:
+        rank = len(ids) + 1
 
     status = "☠️ Dead" if user.get("killed") else "Alive"
+
     await update.message.reply_text(
         f"👤 𝐍𝐚𝐦𝐞: {name}\n"
         f"💰 𝐁𝐚𝐥𝐚𝐧𝐜𝐞: ${user['balance']}\n"
         f"🏆 𝐆𝐥𝐨𝐛𝐚𝐥 𝐑𝐚𝐧𝐤: #{rank}\n"
-        f"❤️ 𝐒𝐭𝐚𝐭𝐮ѕ: {status}\n"
-        f"⚔️ 𝐊𝐢𝐥𝐥s: {user['kills']}"
+        f"❤️ 𝐒𝐭𝐚𝐭𝐮𝐬: {status}\n"
+        f"⚔️ 𝐊𝐢𝐥𝐥𝐬: {user['kills']}"
     )
+
 
 # -------------------- WORK COMMAND --------------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     reward = 200
-    users.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": reward}})
+    user_db.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": reward}})
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
+
 
 # -------------------- ERROR HANDLER --------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
@@ -124,22 +130,23 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text("❌ Something went wrong!")
 
+
 # -------------------- MAIN --------------------
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_error_handler(error_handler)
 
-    # Track users
+    # Track users (groups only)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
 
-    # Start
+    # Start command (DM)
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_handler))
 
     # Restart
     app.add_handler(CommandHandler("test", test_restart))
 
-    # -------------------- ECONOMY COMMANDS --------------------
+    # Economy Commands
     economy_commands = [
         ("balance", balance), ("work", work), ("economy", economy_guide),
         ("transfer", transfer_balance), ("claim", claim), ("own", own),
@@ -153,10 +160,10 @@ def main():
     for cmd, handler in economy_commands:
         app.add_handler(CommandHandler(cmd, handler))
 
-    # -------------------- HELP COMMAND --------------------
+    # Help
     app.add_handler(CommandHandler("help", help_command))
 
-    # -------------------- HIDDEN SECRET ECONOMY COMMANDS --------------------
+    # Hidden Commands
     hidden_cmds = [
         ("mine", mine), ("farm", farm), ("crime", crime), ("heal", heal),
         ("shop", shop), ("buy", buy), ("sell", sell),
@@ -167,7 +174,7 @@ def main():
     for cmd, handler in hidden_cmds:
         app.add_handler(CommandHandler(cmd, handler))
 
-    # -------------------- FUN --------------------
+    # Fun Commands
     fun_commands = [("punch", punch), ("hug", hug), ("couple", couple)]
     for cmd, handler in fun_commands:
         app.add_handler(CommandHandler(cmd, handler))
