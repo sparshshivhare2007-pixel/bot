@@ -20,7 +20,7 @@ OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "0"))
 
 # ChatBot Env
-API_ID = int(os.getenv("API_ID", "26907246"))
+API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 MONGO_URL = os.getenv("MONGO_URL")
 SUPPORT_GRP = os.getenv("SUPPORT_GRP", "Shizuka_support")
@@ -28,6 +28,7 @@ UPDATE_CHNL = os.getenv("UPDATE_CHNL", "shizuka_bots")
 OWNER_USERNAME = os.getenv("OWNER_USERNAME", "INTROVERT_HU_YRR")
 
 # -------------------- HELPERS --------------------
+# Economy Bot Helper
 from helpers import (
     get_user,
     user_db,
@@ -36,6 +37,9 @@ from helpers import (
     runtime_groups,
     group_db
 )
+
+# ChatBot Helper
+from chat.helpers import get_chat_user, add_message, is_user_exists
 
 # -------------------- ECONOMY COMMANDS --------------------
 from commands.start_command import start_command, button_handler
@@ -272,7 +276,7 @@ def main():
     # Group Management
     register_group_management(app)
 
-    # ---- Register ChatBot Handlers ----
+    # ChatBot Handlers
     register_chat_handlers(app)
 
     print("🚀 Bot Started Successfully!")
