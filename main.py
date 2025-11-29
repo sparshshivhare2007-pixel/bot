@@ -1,5 +1,5 @@
+# main.py
 import os
-import random
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import (
@@ -10,25 +10,9 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+import random
 
-# -------------------- LOAD ENV --------------------
-load_dotenv()
-
-# Economy Bot Env
-TOKEN = os.getenv("BOT_TOKEN")
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))
-LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "0"))
-
-# ChatBot Env
-API_ID = int(os.getenv("API_ID"))
-API_HASH = os.getenv("API_HASH")
-MONGO_URL = os.getenv("MONGO_URL")
-SUPPORT_GRP = os.getenv("SUPPORT_GRP", "Shizuka_support")
-UPDATE_CHNL = os.getenv("UPDATE_CHNL", "shizuka_bots")
-OWNER_USERNAME = os.getenv("OWNER_USERNAME", "INTROVERT_HU_YRR")
-
-# -------------------- HELPERS --------------------
-# Economy Bot Helper
+# Helpers
 from helpers import (
     get_user,
     user_db,
@@ -38,10 +22,13 @@ from helpers import (
     group_db
 )
 
-# ChatBot Helper
-from chat.helpers import get_chat_user, add_message, is_user_exists
+# Load environment
+load_dotenv()
+TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+LOG_GROUP_ID = int(os.getenv("LOG_GROUP_ID", "0"))
 
-# -------------------- ECONOMY COMMANDS --------------------
+# -------------------- IMPORT COMMANDS --------------------
 from commands.start_command import start_command, button_handler
 from commands.group_management import register_group_management
 from commands.economy_guide import economy_guide
@@ -71,7 +58,7 @@ from commands.punch import punch
 # Fun
 from commands.hug import hug
 from commands.couple import couple
-from commands.kiss import kiss
+from commands.kiss import kiss  # <-- NEW KISS COMMAND
 
 # Hidden
 from commands.mine import mine
@@ -86,74 +73,6 @@ from commands.bank import bank
 from commands.deposit import deposit
 from commands.withdraw import withdraw
 
-# -------------------- CHATBOT MODULE --------------------
-from chat.commands import register_chat_handlers
-
-# -------------------- WELCOME PHOTOS --------------------
-WELCOME_PHOTOS = [
-    "https://telegra.ph/file/1949480f01355b4e87d26.jpg",
-    "https://telegra.ph/file/3ef2cc0ad2bc548bafb30.jpg",
-]
-
-# -------------------- BOT LOGGING --------------------
-async def on_bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not LOG_GROUP_ID or not update.message or not update.message.new_chat_members:
-        return
-    bot_added = any(m.id == context.bot.id for m in update.message.new_chat_members)
-    if not bot_added:
-        return
-
-    chat = update.effective_chat
-    added_by = update.message.from_user
-    try:
-        count = await context.bot.get_chat_members_count(chat.id)
-    except:
-        count = "Unknown"
-
-    username = chat.username if chat.username else "Private Group"
-    caption = (
-        f"🤖 Bot Added In A New Group\n\n"
-        f"Name: {chat.title}\n"
-        f"ID: {chat.id}\n"
-        f"Username: @{username}\n"
-        f"Members: {count}\n"
-        f"Added By: {added_by.first_name}"
-    )
-    try:
-        await context.bot.send_photo(
-            chat_id=LOG_GROUP_ID,
-            photo=random.choice(WELCOME_PHOTOS),
-            caption=caption
-        )
-    except:
-        pass
-
-async def on_new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not LOG_GROUP_ID or not update.message or not update.message.new_chat_members:
-        return
-    chat = update.effective_chat
-    for member in update.message.new_chat_members:
-        if member.id == context.bot.id:
-            continue
-        add_group_id(chat.id)
-        try:
-            await context.bot.send_message(LOG_GROUP_ID, f"✅ New Member in {chat.title}: {member.first_name}")
-        except:
-            pass
-
-async def on_left_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not LOG_GROUP_ID or not update.message or not update.message.left_chat_member:
-        return
-    chat = update.effective_chat
-    left = update.message.left_chat_member
-    try:
-        await context.bot.send_photo(
-            chat_id=LOG_GROUP_ID,
-            photo=random.choice(WELCOME_PHOTOS),
-            caption=f"❌ Member Left {chat.title}: {left.first_name}"
-        )
-    except:
-        pass
 
 # -------------------- AUTO RESTART --------------------
 async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -162,11 +81,13 @@ async def test_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔄 Restarting bot...")
     os._exit(1)
 
-# -------------------- TRACK USERS --------------------
+
+# -------------------- TRACK GROUP USERS --------------------
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat.type in ["group", "supergroup"]:
         add_group_id(chat.id)
+
 
 # -------------------- BALANCE --------------------
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -181,10 +102,12 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(user_id)
     rank_data = list(user_db.find().sort("balance", -1))
     ids = [u["user_id"] for u in rank_data]
+
     try:
         rank = ids.index(user_id) + 1
     except:
         rank = len(ids) + 1
+
     status = "☠️ Dead" if user.get("killed") else "Alive"
 
     await update.message.reply_text(
@@ -195,12 +118,106 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⚔️ Kills: {user.get('kills', 0)}"
     )
 
+
 # -------------------- WORK --------------------
 async def work(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     reward = 200
     user_db.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": reward}})
     await update.message.reply_text(f"💼 You worked and earned {reward} coins!")
+
+
+# -------------------- BOT ADDED --------------------
+welcome_photos = [
+    "https://telegra.ph/file/1949480f01355b4e87d26.jpg",
+    "https://telegra.ph/file/3ef2cc0ad2bc548bafb30.jpg",
+]
+
+
+async def on_bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not LOG_GROUP_ID:
+        return
+    if not update.message or not update.message.new_chat_members:
+        return
+
+    bot_added = any(m.id == context.bot.id for m in update.message.new_chat_members)
+    if not bot_added:
+        return
+
+    chat = update.effective_chat
+    added_by = update.message.from_user
+
+    try:
+        count = await context.bot.get_chat_members_count(chat.id)
+    except:
+        count = "Unknown"
+
+    username = chat.username if chat.username else "Private Group"
+
+    caption = (
+        f"🤖 Bot Added In A New Group\n\n"
+        f"Name: {chat.title}\n"
+        f"ID: {chat.id}\n"
+        f"Username: @{username}\n"
+        f"Members: {count}\n"
+        f"Added By: {added_by.first_name}"
+    )
+
+    try:
+        await context.bot.send_photo(
+            chat_id=LOG_GROUP_ID,
+            photo=random.choice(welcome_photos),
+            caption=caption
+        )
+    except:
+        pass
+
+
+# -------------------- NEW MEMBER --------------------
+async def on_new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not LOG_GROUP_ID:
+        return
+
+    if not update.message or not update.message.new_chat_members:
+        return
+
+    chat = update.effective_chat
+
+    for member in update.message.new_chat_members:
+        if member.id == context.bot.id:
+            continue
+
+        add_group_id(chat.id)
+
+        text = f"✅ New Member in {chat.title}: {member.first_name}"
+
+        try:
+            await context.bot.send_message(LOG_GROUP_ID, text)
+        except:
+            pass
+
+
+# -------------------- MEMBER LEFT --------------------
+async def on_left_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not LOG_GROUP_ID:
+        return
+    if not update.message or not update.message.left_chat_member:
+        return
+
+    chat = update.effective_chat
+    left = update.message.left_chat_member
+
+    caption = f"❌ Member Left {chat.title}: {left.first_name}"
+
+    try:
+        await context.bot.send_photo(
+            chat_id=LOG_GROUP_ID,
+            photo=random.choice(welcome_photos),
+            caption=caption
+        )
+    except:
+        pass
+
 
 # -------------------- STATUS --------------------
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -210,6 +227,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💬 Groups (active): {len(runtime_groups)}"
     )
 
+
 # -------------------- ERROR HANDLER --------------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"⚠️ Error: {context.error}")
@@ -218,6 +236,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
             await update.effective_message.reply_text("❌ Something went wrong!")
     except:
         pass
+
 
 # -------------------- MAIN --------------------
 def main():
@@ -242,7 +261,7 @@ def main():
     # Status
     app.add_handler(CommandHandler("status", status_command))
 
-    # Economy Commands
+    # Economy
     economy_commands = [
         ("balance", balance), ("work", work), ("economy", economy_guide),
         ("transfer", transfer_balance), ("claim", claim), ("own", own),
@@ -269,18 +288,16 @@ def main():
         app.add_handler(CommandHandler(cmd, handler))
 
     # Fun
-    fun = [("punch", punch), ("hug", hug), ("couple", couple), ("kiss", kiss)]
+    fun = [("punch", punch), ("hug", hug), ("couple", couple), ("kiss", kiss)]  # <-- KISS REGISTERED
     for cmd, handler in fun:
         app.add_handler(CommandHandler(cmd, handler))
 
     # Group Management
     register_group_management(app)
 
-    # ChatBot Handlers
-    register_chat_handlers(app)
-
     print("🚀 Bot Started Successfully!")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
