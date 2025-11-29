@@ -16,9 +16,8 @@ group_db = db["groups"]
 couples = db["couples"]
 
 # 👉 Runtime sets (for broadcast)
-users = set()    # DM me start karne wale users
-groups = set()   # jaha bot added hai
-
+runtime_users = set()    # DM me start karne wale users
+runtime_groups = set()   # jaha bot added hai
 
 # ----------------------- USER SYSTEM -----------------------
 def get_user(user_id):
@@ -51,7 +50,7 @@ def set_group_status(chat_id, status: bool):
 # ---------------------- BROADCAST SYSTEM ----------------------
 # Track which groups bot is added to
 def add_group_id(chat_id):
-    groups.add(chat_id)
+    runtime_groups.add(chat_id)
 
 
 # ---------------------- RANDOM PERCENT ----------------------
