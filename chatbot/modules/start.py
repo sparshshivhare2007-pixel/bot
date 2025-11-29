@@ -1,7 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-async def chatbot_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Hello! I'm your friendly chatbot 😊\nHow can I help you today?"
+        f"Hello {update.effective_user.first_name}!\n"
+        "I am your friendly ChatBot. 🤖\n"
+        "You can chat with me or use /ping to check if I'm alive!"
     )
