@@ -1,12 +1,10 @@
-from . import chatsdb
+from pymongo import MongoClient
+import os
 
-async def is_served_chat(chat_id: int) -> bool:
-    chat = await chatsdb.find_one({"chat_id": chat_id})
-    return bool(chat)
+client = MongoClient(os.getenv("MONGO_URI"))
+db = client["chatbot"]
+chatsdb = db["chats"]
 
-async def add_chat(chat_id: int):
-    if not await is_served_chat(chat_id):
-        await chatsdb.insert_one({"chat_id": chat_id})
-
-async def get_served_chats():
-    return [c async for c in chatsdb.find()]
+async def save_chat(chat_id):
+    if not chatsdb.find_one({"chat_id": chat_id}):
+        chatsdb.insert_one({"chat_id": chat_id})
