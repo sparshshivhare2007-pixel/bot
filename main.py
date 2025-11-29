@@ -2,7 +2,7 @@ import os
 import random
 from datetime import datetime
 from dotenv import load_dotenv
-from telegram import Update, Chat
+from telegram import Update
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -71,10 +71,10 @@ from commands.deposit import deposit
 from commands.withdraw import withdraw
 
 # -------------------- CHATBOT COMMANDS --------------------
+from chatbot.modules.start_chat import start as chat_start  # Chatbot start
 from chatbot.chatbot import register_chat_handlers
 from chatbot.broadcast import broadcast
 from chatbot.ping import ping
-from chatbot.start import start as chat_start
 
 # -------------------- WELCOME PHOTOS --------------------
 welcome_photos = [
@@ -257,9 +257,12 @@ def main():
     for cmd, handler in hidden:
         app.add_handler(CommandHandler(cmd, handler))
 
+    # Group management
     register_group_management(app)
 
     # -------------------- CHATBOT HANDLERS --------------------
+    # Chatbot start command mapped to /chatstart
+    app.add_handler(CommandHandler("chatstart", chat_start))
     register_chat_handlers(app)
 
     print("🚀 Bot Started Successfully!")
