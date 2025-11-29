@@ -1,18 +1,8 @@
 from pymongo import MongoClient
-import config
+import config  # Make sure you have config.py with MONGO_URL
 
-# -------------------- DATABASE CONNECTION --------------------
-mongo_client = MongoClient(config.MONGO_URL)
+mongo = MongoClient(config.MONGO_URL)
+db = mongo.ChatDb  # Chatbot-specific database
 
-# Chatbot ke liye alag DB
-chatbot_db = mongo_client["ChatBotDb"]
-
-# Collections
-users_col = chatbot_db["users"]
-chats_col = chatbot_db["chats"]
-couples_col = chatbot_db["couples"]
-
-# Module imports
-from .users import *
-from .chats import *
-from .couples import *
+chatsdb = db["chatsdb"]
+usersdb = db["users"]
