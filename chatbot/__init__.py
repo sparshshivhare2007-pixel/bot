@@ -1,1 +1,1 @@
-from .chatbot import ChatBot
+# required for package import
