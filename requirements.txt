@@ -1,5 +1,11 @@
-python-telegram-bot==21.5
+Abg==2.3.1
+pyrogram==2.0.106
 pymongo==4.8.0
+motor
+requests
+dnspython
+tgcrypto==1.2.2
+asyncio
 python-dotenv==1.0.1
+python-telegram-bot==21.5
 httpx
-
