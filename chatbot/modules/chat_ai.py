@@ -1,18 +1,12 @@
-from chatbot.helpers import add_served_chat, add_served_user
 from telegram import Update
 from telegram.ext import ContextTypes
+from chat.chat_helpers import get_chat_user, add_message, is_user_exists
 
 async def chat_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = update.message
-    user_msg = message.text
-
-    # Example simple friendly AI reply
-    reply = f"Hey {message.from_user.first_name}, you said: {user_msg}\nI'm here to chat with you 😊"
-
-    await message.reply_text(reply)
-
-    # Track user/chat for database
-    if message.chat.type == "private":
-        await add_served_user(message.from_user.id)
-    else:
-        await add_served_chat(message.chat.id)
+    user_id = update.effective_user.id
+    message = update.message.text
+    if not is_user_exists(user_id):
+        get_chat_user(user_id)
+    add_message(user_id, message)
+    # Example AI response
+    await update.message.reply_text(f"You said: {message}")
