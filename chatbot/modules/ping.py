@@ -1,20 +1,47 @@
 import random
 from datetime import datetime
-from pyrogram import filters
-from pyrogram.enums import ChatType
-from pyrogram.types import InlineKeyboardMarkup
-from chatbot import ChatBot
-from chatbot.database.chats import add_served_chat
-from chatbot.database.users import add_served_user
-from config import IMG, STICKER, OWNER_USERNAME
+from telegram import InlineKeyboardMarkup, ChatType
+from helpers import add_served_user, add_served_chat
 
-@ChatBot.on_message(filters.command("ping"))
-async def ping(_, message):
+# Your stickers and images
+STICKER = [
+    "CAACAgUAAxkBAAEJ2VllrQYl",
+    "CAACAgUAAxkBAAEJ2VllrQT6",
+    "CAACAgUAAxkBAAEJ2VllrQKf",
+]
+
+IMG = [
+    "https://files.catbox.moe/abcd1.jpg",
+    "https://files.catbox.moe/abcd2.jpg",
+    "https://files.catbox.moe/abcd3.jpg",
+]
+
+
+async def ping(update, context):
+    message = update.message
+
+    # Reply sticker
     await message.reply_sticker(sticker=random.choice(STICKER))
+
+    # Start time
     start = datetime.now()
-    loda = await message.reply_photo(photo=random.choice(IMG), caption="ᴘɪɴɢɪɴɢ...")
+
+    # Reply image + caption
+    loading = await message.reply_photo(
+        photo=random.choice(IMG),
+        caption="ᴘɪɴɢɪɴɢ..."
+    )
+
+    # Time taken (ms)
     ms = (datetime.now() - start).microseconds / 1000
-    await loda.edit_text(f"Bot alive! Ping: `{ms}` ms", reply_markup=InlineKeyboardMarkup([]))
+
+    # Edit message with final ping result
+    await loading.edit_caption(
+        caption=f"Bot alive! Ping: `{ms}` ms",
+        reply_markup=InlineKeyboardMarkup([])
+    )
+
+    # Save served user/chat
     if message.chat.type == ChatType.PRIVATE:
         await add_served_user(message.from_user.id)
     else:
