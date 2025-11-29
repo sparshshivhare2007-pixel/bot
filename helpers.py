@@ -50,5 +50,8 @@ def is_group_open(chat_id):
 def set_group_status(chat_id, status: bool):
     groups.update_one({"chat_id": chat_id}, {"$set": {"open": status}}, upsert=True)
 
+def add_group_user(chat_id):
+    groups.add(chat_id)
+
 def random_percentage():
     return random.randint(0, 100)
