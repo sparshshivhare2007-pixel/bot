@@ -1,17 +1,10 @@
-# Pyrogram (Chatbot)
+python-telegram-bot==21.5
 pyrogram==2.0.106
 tgcrypto==1.2.2
-
-# python-telegram-bot (Economy)
-python-telegram-bot==21.5
-
-# Database & async support
 pymongo==4.8.0
 motor
 dnspython
-
-# HTTP requests & utils
 requests
 httpx
-python-dotenv==1.0.1
 asyncio
+python-dotenv
