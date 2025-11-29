@@ -1,10 +1,12 @@
-from .start import chatbot_start
-from .chat_ai import ai_chat
-from .ping import ping
-from .stats import stats
+from telegram.ext import Application
+from chatbot.ping import ping
+from chatbot.chat_ai import chat_ai
 
-def setup_chatbot_handlers(app):
-    app.add_handler(CommandHandler("cstart", chatbot_start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_chat))
-    app.add_handler(CommandHandler("cping", ping))
-    app.add_handler(CommandHandler("cstats", stats))
+def register_chat_handlers(app: Application):
+    # Register ping
+    from telegram.ext import CommandHandler, MessageHandler, filters
+
+    app.add_handler(CommandHandler("ping", ping))
+
+    # Register chat AI for all text messages in private chats
+    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, chat_ai))
