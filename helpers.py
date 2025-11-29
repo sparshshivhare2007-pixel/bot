@@ -12,6 +12,8 @@ db = client["economy_bot"]
 users = db["users"]
 groups = db["groups"]
 couples = db["couples"]
+users = set()   # jinhone start kiya
+groups = set()  # jaha bot add hai
 
 
 # ----------------- DB Helper Functions -----------------
