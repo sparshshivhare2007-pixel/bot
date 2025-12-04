@@ -1,27 +1,22 @@
-from pyrogram import Client, filters
-from database.db import get_user, update_user
+from main import app
+from pyrogram import filters
+from pyrogram.types import Message
+from database.db import get_user, add_wallet, users
 import random
 
-@app.on_message(filters.command("rob"))
-async def rob(client, message):
-
-    if not message.reply_to_message:
-        return await message.reply("Reply to someone to rob!")
-
+@app.on_message(filters.command("rob") & filters.group)
+async def rob_cmd(client, message: Message):
+    if not message.reply_to_message or not message.reply_to_message.from_user:
+        return await message.reply("Reply to a user to rob them.")
     thief = message.from_user
     target = message.reply_to_message.from_user
-
-    thief_data = await get_user(thief.id)
-    target_data = await get_user(target.id)
-
-    if target_data["wallet"] < 100:
-        return await message.reply("❌ Target has too little money to rob!")
-
-    stolen = random.randint(50, target_data["wallet"])
-
-    await update_user(thief.id, {"wallet": thief_data["wallet"] + stolen})
-    await update_user(target.id, {"wallet": target_data["wallet"] - stolen})
-
-    await message.reply(
-        f"🔫 {thief.mention} robbed {target.mention} and stole **{stolen} coins!**"
-    )
+    if thief.id == target.id:
+        return await message.reply("You can't rob yourself.")
+    tdata = await get_user(target.id)
+    if tdata.get("wallet",0) < 100:
+        return await message.reply("Target has too little money to be worth robbing.")
+    stolen = random.randint(50, min(500, tdata.get("wallet",0)))
+    # update thief and target
+    await users.update_one({"_id": thief.id}, {"$inc": {"wallet": stolen}}, upsert=True)
+    await users.update_one({"_id": target.id}, {"$inc": {"wallet": -stolen}}, upsert=True)
+    await message.reply(f"🔫 {thief.mention} robbed {target.mention} for {stolen} coins.")
