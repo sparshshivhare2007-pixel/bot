@@ -1,19 +1,18 @@
 from main import app
 from pyrogram import filters
-from pyrogram.types import Message
 from database.db import users
-import asyncio
+from pyrogram.types import Message
 
 @app.on_message(filters.command('leaderboard') & filters.private)
 async def lb_cmd(client, message: Message):
-    top = users.find().sort([('wallet', -1)]).limit(10)
+    cur = users.find().sort([('wallet', -1)]).limit(10)
     lines = []
-    async for u in top:
+    async for u in cur:
         uid = u['_id']
         total = u.get('wallet',0) + u.get('bank',0)
         try:
             user = await client.get_users(uid)
-            name = f"{user.first_name or ''} {getattr(user,'last_name', '')}".strip()
+            name = user.first_name or str(uid)
         except:
             name = str(uid)
         lines.append(f"{name}: {total}")
