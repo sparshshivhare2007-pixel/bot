@@ -1,11 +1,10 @@
 Abg==2.3.1
 pyrogram==2.0.106
+tgcrypto==1.2.2
 pymongo
 motor
 requests
 dnspython
-tgcrypto==1.2.2
-asyncio
 python-dotenv
 lexica-api
 deep-translator
@@ -16,7 +15,3 @@ uvloop
 psutil
 langdetect
 MukeshAPI
-
-# Extra / common libraries for your new commands
-python-telegram-bot==20.3
-aiohttp
